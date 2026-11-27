@@ -92,6 +92,18 @@ describe('RunInsights', () => {
     expect(posted).toContainEqual({ type: 'kanban:fixAction', artifactId: 'S-1', action: 'sign-in' });
   });
 
+  it('shows a message you sent in Activity as soon as it is added to the card', () => {
+    render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
+    deliver({ type: 'kanban:runTimeline', artifactId: 'S-1', runs: [], commits: [] });
+    posted.length = 0;
+
+    deliver({ type: 'kanban:cardNotesChanged', artifactId: 'S-1' });
+    expect(posted).toContainEqual({ type: 'kanban:getRunTimeline', artifactId: 'S-1' });
+    deliver({ type: 'kanban:runTimeline', artifactId: 'S-1', runs: [], commits: [], notes: [{ author: 'You', text: 'try again', at: '2026-11-27 09:40' }] });
+    expect(screen.getByText('try again')).toBeTruthy();
+    expect(screen.getByText('You')).toBeTruthy();
+  });
+
   it('requests the timeline and renders runs and revertable agent commits', () => {
     render(<RunInsights item={{ ...ITEM, agentState: undefined }} />);
     expect(posted).toContainEqual({ type: 'kanban:getRunTimeline', artifactId: 'S-1' });

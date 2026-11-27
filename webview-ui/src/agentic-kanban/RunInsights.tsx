@@ -273,6 +273,10 @@ export function RunInsights({ item, trace = NO_TRACE, hideAnswer = false, hideFi
         setPr(msg.pr ?? undefined);
         if (Array.isArray(msg.notes)) setNotes(msg.notes);
       }
+      // Something you sent was added to the card: show it in Activity now.
+      if (msg?.type === 'kanban:cardNotesChanged' && msg.artifactId === item.id) {
+        vscode.postMessage({ type: 'kanban:getRunTimeline', artifactId: item.id });
+      }
     };
     window.addEventListener('message', onMessage);
     vscode.postMessage({ type: 'kanban:getRunTimeline', artifactId: item.id });

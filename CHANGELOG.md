@@ -117,6 +117,10 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Dragging an epic into In Progress with no lead agent now says nothing ran and what to do (move its stories, or add a lead), instead of a plain "Moved".
 - While an agent edits code, the knowledge graph updates one run at a time, shown in the status bar, instead of stacking "graphify: updating graph" notifications. Edits inside agent worktrees, backups and board files no longer start an update.
 
+### Fixed: Messages you send to an agent show on the card
+
+- A message you send from a card, and your answers to an agent's questions, now appear in the card's Activity as notes from You, right away, whether the message goes now or waits for the current run to end.
+
 ### Fixed: Agents now use the code graph
 
 - Agents run in their card's worktree, where the graph isn't present, so they never queried it and searched files instead. Their brief now says how to query the project's graph, when one exists.

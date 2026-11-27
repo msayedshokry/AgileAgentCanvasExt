@@ -10,6 +10,8 @@ import type { ArtifactChanges } from '../types';
 import { cleanFollowUp, FollowUpQueue, mergeFixRequests } from '../workflow/harness/follow-up';
 import { concurrencyQueue } from '../workflow/concurrency-queue';
 import { kanbanOrchestrator } from '../workflow/kanban-orchestrator';
+import { appendNote } from '../workflow/harness/board-effects';
+import { readAgentNotes, type AgentNote } from '../workflow/harness/agent-brief';
 import { createLogger } from '../utils/logger';
 import { errMsg } from '../utils/error';
 
@@ -35,10 +37,17 @@ export class FollowUpSender {
 
   constructor(private readonly store: ArtifactStore, private readonly deps: FollowUpDeps = DEFAULT_DEPS) {}
 
-  /** Send now, or queue until the card's current run ends. */
-  async submit(artifactId: string, text: unknown, post: Post): Promise<void> {
+  /**
+   * Send now, or queue until the card's current run ends. What you sent shows
+   * on the card as a note from You (`note` replaces its text; false: no note).
+   */
+  async submit(artifactId: string, text: unknown, post: Post, opts: { note?: string | false } = {}): Promise<void> {
     const message = cleanFollowUp(text);
     if (!message || !this.store.findArtifactById(artifactId)) return;
+    if (opts.note !== false) {
+      await this.noteFromYou(artifactId, opts.note ?? message);
+      post({ type: 'kanban:cardNotesChanged', artifactId });
+    }
     const pending = this.queue.add(artifactId, message);
     if (this.deps.isBusy(artifactId)) {
       post({ type: 'kanban:followUpQueued', artifactId, pending });
@@ -54,6 +63,15 @@ export class FollowUpSender {
    */
   takeForRun(artifactId: string): string[] {
     return this.queue.take(artifactId);
+  }
+
+  private async noteFromYou(artifactId: string, text: string): Promise<void> {
+    const found = this.store.findArtifactById(artifactId);
+    if (!found) return;
+    const note: AgentNote = { author: 'You', text, at: new Date().toISOString().slice(0, 16).replace('T', ' ') };
+    await this.store.updateArtifact(found.type, artifactId, {
+      metadata: { agentNotes: appendNote(readAgentNotes(found.artifact), note) },
+    } as ArtifactChanges);
   }
 
   dispose(): void {

@@ -65,6 +65,28 @@ describe('FollowUpSender', () => {
     sender.dispose();
   });
 
+  it('shows what you sent on the card as a note from You, sent or queued', async () => {
+    const store = fakeStore();
+    await new FollowUpSender(store as never, { isBusy: () => false, run }).submit('S-1', 'try again', () => undefined);
+    busy = true;
+    const sender = new FollowUpSender(store as never, { isBusy: () => busy, run, pollMs: 100 });
+    await sender.submit('S-1', 'use sessionStorage', () => undefined);
+
+    const notes = store.artifact.metadata.agentNotes as Array<{ author: string; text: string; at: string }>;
+    expect(notes.map((n) => [n.author, n.text])).toEqual([['You', 'try again'], ['You', 'use sessionStorage']]);
+    expect(notes[0].at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    sender.dispose();
+  });
+
+  it('records a shorter note when asked, and none when told not to', async () => {
+    const store = fakeStore();
+    const sender = new FollowUpSender(store as never, { isBusy: () => false, run });
+    await sender.submit('S-1', 'Q: which?\nA: build it', () => undefined, { note: 'Answered: build it' });
+    await sender.submit('S-1', 'quiet', () => undefined, { note: false });
+    const notes = store.artifact.metadata.agentNotes as Array<{ text: string }>;
+    expect(notes.map((n) => n.text)).toEqual(['Answered: build it']);
+  });
+
   it('ignores empty messages and unknown cards', async () => {
     const store = fakeStore();
     const sender = new FollowUpSender(store as never, { isBusy: () => busy, run });

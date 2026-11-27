@@ -137,8 +137,11 @@ export async function answerQuestions(store: ArtifactStore, cardId: string, answ
   const item = needsYouList().find((i) => i.artifactId === cardId && i.kind === 'question');
   if (!item || !answer.trim()) return false;
   // An agent still waiting in board_ask gets the answer in its current run.
-  if (!liveQuestions.answer(cardId, answer.trim())) {
-    await followUpSender(store).submit(cardId, answerFollowUp(item.details ?? [], answer), post);
+  if (liveQuestions.answer(cardId, answer.trim())) {
+    await addNote(defaultDeps(store), cardId, 'You', answer.trim());
+    post({ type: 'kanban:cardNotesChanged', artifactId: cardId });
+  } else {
+    await followUpSender(store).submit(cardId, answerFollowUp(item.details ?? [], answer), post, { note: answer.trim() });
   }
   dismissNeedsYou(cardId);
   return true;
