@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../utils/logger';
-import { resolveArtifactTargetUri, writeJsonFile, writeMarkdownCompanion } from './artifact-file-io';
+import { resolveArtifactTargetUri, storyContentForEpic, writeJsonFile, writeMarkdownCompanion } from './artifact-file-io';
 import { generateVisionMarkdown, generateSingleEpicMarkdown, generateEpicsMarkdown, generateProductBriefMarkdown, generatePRDMarkdown, generateArchitectureMarkdown, generateTestStrategyMarkdown, generateTestDesignMarkdown, generateGenericArtifactMarkdown } from './artifact-markdown-generator';
 import type { BmadArtifacts } from '../types';
 
@@ -298,7 +298,7 @@ export class ArtifactFileWriter {
 
                   // The story schema requires content.epicId; in-memory stories
                   // often omit it because membership is implied by the parent epic.
-                  content: { epicId: epic.id, ...story }
+                  content: storyContentForEpic(story, epic.id)
 
               };
 

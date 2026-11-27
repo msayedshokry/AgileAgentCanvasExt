@@ -41,6 +41,37 @@ describe('enum repair', () => {
   });
 });
 
+describe('string to object coercion', () => {
+  const refsSchema = (props: Record<string, { type: string; enum?: string[] }>, required?: string[]) => ({
+    type: 'object',
+    properties: {
+      refs: { type: 'array', items: { type: 'object', properties: props, ...(required ? { required } : {}) } },
+    },
+  });
+
+  it('puts the string in a content field, not a classifier like "type"', () => {
+    // Story uxReferences: { type, reference, description }; a bare file name is the reference.
+    const schema = refsSchema({ type: { type: 'string' }, reference: { type: 'string' }, description: { type: 'string' } });
+    const result = repairDataWithSchema({ refs: ['wireframe-board.fig'] }, schema);
+    expect(result.data.refs[0]).toEqual({ type: '', reference: 'wireframe-board.fig', description: '' });
+  });
+
+  it('prefers a required content field', () => {
+    const schema = refsSchema({ kind: { type: 'string' }, note: { type: 'string' }, title: { type: 'string' } }, ['title']);
+    expect(repairDataWithSchema({ refs: ['Login page'] }, schema).data.refs[0].title).toBe('Login page');
+  });
+
+  it('never uses an enum field for free text', () => {
+    const schema = refsSchema({ status: { type: 'string', enum: ['open', 'closed'] }, text: { type: 'string' } });
+    expect(repairDataWithSchema({ refs: ['Check the logs'] }, schema).data.refs[0]).toEqual({ status: '', text: 'Check the logs' });
+  });
+
+  it('still uses a classifier field when it is the only string field', () => {
+    const schema = refsSchema({ type: { type: 'string' }, count: { type: 'integer' } });
+    expect(repairDataWithSchema({ refs: ['figma'] }, schema).data.refs[0].type).toBe('figma');
+  });
+});
+
 describe('number enum repair', () => {
   const numberSchema = {
     type: 'object',

@@ -177,8 +177,17 @@ export interface EpicDependencies {
     relatedEpics?: string[];
 }
 
+/** A note an agent left on a board card (stored as `content.agentNotes`). */
+export interface CardAgentNote {
+    author: string;
+    text: string;
+    at: string;
+}
+
 export interface Epic {
     id: string;
+    /** Notes agents left on this card. */
+    agentNotes?: CardAgentNote[];
     title: string;
     goal: string;
     /**
@@ -341,6 +350,8 @@ export interface StoryHistoryEntry {
 
 export interface Story {
     id: string;
+    /** Notes agents left on this card. */
+    agentNotes?: CardAgentNote[];
     title: string;
     userStory: {
         asA: string;

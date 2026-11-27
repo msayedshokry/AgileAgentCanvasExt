@@ -196,7 +196,11 @@ export function mapSchemaEpicToInternal(epicData: any): Epic | null {
 
         // projects that don't have a standalone test-strategy file.
 
-        testStrategy: epicData.testStrategy
+        testStrategy: epicData.testStrategy,
+
+        // Notes agents left on the card (board notes).
+
+        agentNotes: epicData.agentNotes
 
     };
 
@@ -573,7 +577,11 @@ export function mapSchemaStoryToInternal(storyData: any): Story | null {
 
         assignee: storyData.assignee,
 
-        reviewer: storyData.reviewer
+        reviewer: storyData.reviewer,
+
+        // Notes agents left on the card (board notes); the blocked-run notice reads the latest.
+
+        agentNotes: storyData.agentNotes
 
     };
 

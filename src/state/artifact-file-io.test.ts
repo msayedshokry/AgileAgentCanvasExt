@@ -2,7 +2,17 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('vscode', () => ({ workspace: { fs: {} } }));
 
-import { withCreatedTimestamp } from './artifact-file-io';
+import { storyContentForEpic, withCreatedTimestamp } from './artifact-file-io';
+
+describe('storyContentForEpic', () => {
+  it('adds the parent epic id a story is missing', () => {
+    expect(storyContentForEpic({ id: 'S-1.1' }, 'epic-1')).toEqual({ id: 'S-1.1', epicId: 'epic-1' });
+  });
+
+  it('replaces a blank epic id left by Fix Schemas', () => {
+    expect(storyContentForEpic({ id: 'S-1.2', epicId: '' }, 'epic-1').epicId).toBe('epic-1');
+  });
+});
 
 describe('withCreatedTimestamp', () => {
   it('adds created from lastModified when a new file has no created timestamp', () => {

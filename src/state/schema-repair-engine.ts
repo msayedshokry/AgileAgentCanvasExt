@@ -127,17 +127,17 @@ export function repairDataWithSchema(
                     }
                 } else if (typeof value === 'string' && value.length > 0 && node.properties) {
                     // Smart coerce: convert a string into an object by placing the
-                    // string value into the first string-typed property.
+                    // string value into the string property most likely to hold it.
                     const stringProps = Object.entries(node.properties)
                         .filter(([, s]) => resolveType(s as SchemaNode) === 'string');
                     if (stringProps.length > 0) {
+                        const target = pickTextProperty(stringProps, node.required);
                         const obj: Record<string, any> = {};
-                        obj[stringProps[0][0]] = value;
-                        // Fill remaining string properties with empty strings
-                        for (let sp = 1; sp < stringProps.length; sp++) {
-                            obj[stringProps[sp][0]] = '';
+                        // Fill the other string properties with empty strings
+                        for (const [name] of stringProps) {
+                            obj[name] = name === target ? value : '';
                         }
-                        log(path, `coerced string "${value.substring(0, 40)}${value.length > 40 ? '…' : ''}" into object property "${stringProps[0][0]}"`);
+                        log(path, `coerced string "${value.substring(0, 40)}${value.length > 40 ? '…' : ''}" into object property "${target}"`);
                         value = obj;
                     } else {
                         value = {};
@@ -372,6 +372,21 @@ function resolvePointer(root: any, pointer: string): any {
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 function isIso8601(s: string): boolean {
     return ISO_RE.test(s);
+}
+
+/** Property names that classify an object rather than hold its text. */
+const CLASSIFIER_PROPS = new Set(['type', 'kind', 'category', 'status', 'priority', 'severity', 'level']);
+
+/**
+ * Which string property a bare string should land in when it is coerced into
+ * an object: a required text field first, then any text field, and only then a
+ * classifier. Putting `"wireframe.fig"` into `type` loses what it was.
+ */
+function pickTextProperty(stringProps: Array<[string, SchemaNode]>, required: string[] | undefined): string {
+    const isText = ([name, s]: [string, SchemaNode]) => !CLASSIFIER_PROPS.has(name.toLowerCase()) && !Array.isArray(s.enum);
+    const text = stringProps.filter(isText);
+    const requiredText = text.find(([name]) => required?.includes(name));
+    return (requiredText ?? text[0] ?? stringProps[0])[0];
 }
 
 /**

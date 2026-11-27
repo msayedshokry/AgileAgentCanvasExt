@@ -119,6 +119,15 @@ export async function writeJsonFile(targetUri: vscode.Uri, payload: Record<strin
 }
 
 /**
+ * A story file's content. The schema requires `content.epicId`; the file sits
+ * in its epic's folder, so that epic wins over a missing or blank value (Fix
+ * Schemas scaffolds missing required strings as '').
+ */
+export function storyContentForEpic<T extends object>(story: T, epicId: string): T & { epicId: string } {
+    return { ...story, epicId };
+}
+
+/**
  * The metadata schema requires `timestamps.created`. Callers only set
  * `lastModified` and rely on the merge above to keep `created` from disk, so a
  * brand-new file (or one written before this fix) would otherwise lack it.

@@ -81,7 +81,12 @@ export class ArtifactRepairer {
                         if (pre.valid) continue;
                     }
 
-                    const fixed = repairArtifactData(data, artifactType, fileName);
+                    // A blank epicId passes the schema but loses the story's epic; the
+                    // file sits in its epic's folder, so take the id from epic.json.
+                    const input = artifactType === 'story'
+                        ? withStoryEpicId(data, await this.readParentEpic(fileUri))
+                        : data;
+                    const fixed = repairArtifactData(input, artifactType, fileName);
                     if (fixed !== data) {
                         const repairFormat = this.getOutputFormat();
                         if (repairFormat === 'json' || repairFormat === 'dual') {
@@ -106,4 +111,26 @@ export class ArtifactRepairer {
             this.setSyncingUntil(Date.now() + 500);
         }
     }
+
+    /** `epics/<epic>/epic.json` for a file at `epics/<epic>/stories/<story>.json`. */
+    private async readParentEpic(storyUri: vscode.Uri): Promise<unknown> {
+        const parts = storyUri.path.split('/');
+        if (parts.at(-2) !== 'stories') return undefined;
+        const epicUri = storyUri.with({ path: [...parts.slice(0, -2), 'epic.json'].join('/') });
+        try {
+            return JSON.parse(Buffer.from(await vscode.workspace.fs.readFile(epicUri)).toString('utf-8'));
+        } catch {
+            return undefined; // no readable epic.json: leave epicId to the generic repair
+        }
+    }
+}
+
+/** Fill a story file's missing or blank `content.epicId` from its parent epic file. */
+export function withStoryEpicId<T extends Record<string, unknown>>(story: T, epicFile: unknown): T {
+    const content = story?.content as Record<string, unknown> | undefined;
+    if (!content || typeof content !== 'object' || (typeof content.epicId === 'string' && content.epicId.trim())) return story;
+    const epic = epicFile as { id?: unknown; content?: { id?: unknown } } | undefined;
+    const epicId = epic?.content?.id ?? epic?.id;
+    if (typeof epicId !== 'string' || !epicId.trim()) return story;
+    return { ...story, content: { ...content, epicId } };
 }

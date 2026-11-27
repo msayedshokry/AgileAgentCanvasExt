@@ -3,6 +3,14 @@ import { createLogger } from '../utils/logger';
 import { mapSchemaStoryToInternal } from './schema-mappers';
 import type { Epic, Story, TestCase, TestCaseType } from '../types';
 import { errMsg } from '../utils/error';
+import { REPOS_SUBFOLDER } from './constants';
+
+/**
+ * Folders inside the output folder that hold run state, not artifacts. Agent
+ * verdict files like `EPIC-3-…-result.json` would otherwise be detected as the
+ * epics manifest by name, and Fix Schemas would overwrite them.
+ */
+const NON_ARTIFACT_DIRS = new Set(['_terminal-output', REPOS_SUBFOLDER]);
 
 const loadHelpersLogger = createLogger('artifact-load-helpers');
 const logDebug = (...args: unknown[]) => loadHelpersLogger.debug(...args);
@@ -55,6 +63,7 @@ export async function findAllJsonFiles(
         
         for (const [name, type] of entries) {
             if (name.startsWith('.')) continue; // Skip hidden files/folders
+            if ((type & vscode.FileType.Directory) !== 0 && NON_ARTIFACT_DIRS.has(name)) continue;
             
             const entryUri = vscode.Uri.joinPath(folderUri, name);
             
