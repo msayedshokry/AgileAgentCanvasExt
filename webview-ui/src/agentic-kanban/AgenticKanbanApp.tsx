@@ -494,6 +494,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             message: `Transition failed: ${(message.blockedBy as string[])?.join(', ') ?? 'unknown reason'}`,
             type: 'error',
           });
+        } else if (typeof message.notice === 'string') {
+          setToast({ message: message.notice, type: 'info' });
         } else if (message.status === 'moved_without_workflow') {
           setToast({ message: 'Card moved. No workflow run.', type: 'info' });
         } else {

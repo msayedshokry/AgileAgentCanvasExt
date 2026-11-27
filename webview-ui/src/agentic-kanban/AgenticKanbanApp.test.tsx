@@ -165,6 +165,14 @@ describe('AgenticKanbanApp — drag and drop', () => {
     expect(toast()).toHaveClass('kanban-toast--success');
   });
 
+  it('shows what the extension says happened instead of "Moved to" when it explains', () => {
+    renderBoard([story('story-note', 'backlog', 'Explained')]);
+    dragTo(card('Explained'), column('Ready for Dev'));
+    send({ type: 'transitionResult', artifactId: 'story-note', ok: true, status: 'complete', notice: 'Epic marked in progress, but nothing ran.' });
+    expect(toast()).toHaveTextContent('Epic marked in progress, but nothing ran.');
+    expect(toast()).not.toHaveTextContent('Moved to');
+  });
+
   it('shows the blocking reason and snaps the card back when a transition fails', () => {
     renderBoard([story('story-fail', 'backlog', 'Will Fail')]);
     dragTo(card('Will Fail'), column('Ready for Dev'));

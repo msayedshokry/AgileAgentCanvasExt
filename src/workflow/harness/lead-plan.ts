@@ -167,3 +167,12 @@ export class LeadGuard {
     return this.state(epicId).runs;
   }
 }
+
+/**
+ * Dragging an epic into In Progress runs nothing unless a lead agent owns it:
+ * agents work stories. Say so, instead of a silent "Moved".
+ */
+export function epicStartedWithoutLeadNotice(move: { isEpic: boolean; toStatus: string; leadOwns: boolean }): string | undefined {
+  if (!move.isEpic || move.toStatus !== 'in-progress' || move.leadOwns) return undefined;
+  return 'Epic marked in progress, but nothing ran: agents work stories. Drag its stories to In Progress, or add a lead in Agents to plan the epic.';
+}

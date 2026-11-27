@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLeadRunbook, describeWake, LeadGuard, MAX_LEAD_RUNS_PER_EPIC, planLeadEffects, type EpicStory } from './lead-plan';
+import { buildLeadRunbook, describeWake, epicStartedWithoutLeadNotice, LeadGuard, MAX_LEAD_RUNS_PER_EPIC, planLeadEffects, type EpicStory } from './lead-plan';
 
 const lead = { id: 'cos', name: 'Chief of Staff', harness: 'claude', lead: true };
 const dev = { id: 'dev', name: 'Dev', harness: 'claude', role: 'Implements web stories' };
@@ -88,5 +88,20 @@ describe('LeadGuard', () => {
     for (let i = 0; i < MAX_LEAD_RUNS_PER_EPIC; i++) { expect(g.request('E-1')).toBe('run'); g.finish('E-1', true); }
     expect(g.request('E-1')).toBe('limit');
     expect(g.request('E-2')).toBe('run');
+  });
+});
+
+describe('epicStartedWithoutLeadNotice', () => {
+  it('tells you nothing ran when an epic moves to In Progress and no lead plans it', () => {
+    const notice = epicStartedWithoutLeadNotice({ isEpic: true, toStatus: 'in-progress', leadOwns: false });
+    expect(notice).toMatch(/nothing ran/i);
+    expect(notice).toMatch(/stories/);
+    expect(notice).toMatch(/lead/i);
+  });
+
+  it('says nothing when the lead owns the epic, or for stories and other columns', () => {
+    expect(epicStartedWithoutLeadNotice({ isEpic: true, toStatus: 'in-progress', leadOwns: true })).toBeUndefined();
+    expect(epicStartedWithoutLeadNotice({ isEpic: false, toStatus: 'in-progress', leadOwns: false })).toBeUndefined();
+    expect(epicStartedWithoutLeadNotice({ isEpic: true, toStatus: 'review', leadOwns: false })).toBeUndefined();
   });
 });

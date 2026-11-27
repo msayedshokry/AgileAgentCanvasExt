@@ -328,11 +328,14 @@ export async function handleAgentUxMessage(
         await postStatus(post);
         break;
       }
+      // Every harness:* request answers with a status: the panel waits for one.
       case 'harness:signIn':
         if (harnessId) await startSignIn(harnessId);
+        await postStatus(post);
         break;
       case 'harness:install':
         if (harnessId) void vscode.window.showInformationMessage(getHarnessAdapter(harnessId)!.installHint);
+        await postStatus(post);
         break;
       case 'harness:smoke':
       case 'harness:pick':

@@ -32,6 +32,7 @@ import { handleAgentTeamMessage } from './agent-team-messages';
 import { handleFollowUpMessage } from './follow-up-messages';
 import { handleBoardProtocolMessage } from './board-protocol';
 import { leadCoordinator } from './lead-coordinator';
+import { epicStartedWithoutLeadNotice } from '../workflow/harness/lead-plan';
 
 import { isTerminalInbound } from './terminal-protocol';
 import { TerminalSessionRouter } from './terminal-session-router';
@@ -380,10 +381,17 @@ export async function handleAgenticKanbanMessage(
         if (toStatus === 'done') void leadCoordinator()?.storyMovedToDone(artifactId);
 
         if (webview) {
+          const found = store.findArtifactById(artifactId);
+          const notice = result.ok ? epicStartedWithoutLeadNotice({
+            isEpic: found?.type === 'epic',
+            toStatus,
+            leadOwns: !!leadCoordinator()?.owns({ id: artifactId, type: 'epic' }),
+          }) : undefined;
           webview.postMessage({
             type: 'transitionResult',
             artifactId,
             ...result,
+            ...(notice ? { notice } : {}),
           });
 
           // When terminal execution was launched, push agent state so the

@@ -110,6 +110,12 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Party mode gained an anti-consensus room and stays open until you end it. Added two elicitation methods (Subtraction, Map Is Not the Territory). Epics stay in draft until final validation passes.
 - Upgraded the Headroom compression engine from 0.22 to 0.45; every compression call the extension makes behaves the same. The built-in proxy answers a request whose message list is malformed with a clear 400 error instead of failing.
 
+### Fixed: The board noticing a sign-in, and saying when a drag runs nothing
+
+- Signing in to an agent from your own terminal now shows up when you come back to the board; it no longer says "Signed out" until you press refresh.
+- After Sign in or How to install, the agent panel no longer stays busy.
+- Dragging an epic into In Progress with no lead agent now says nothing ran and what to do (move its stories, or add a lead), instead of a plain "Moved".
+
 ### Fixed: Saving no longer rewrites your project files
 
 Saving any change used to rewrite every artifact file, and some of what was rewritten was lost.

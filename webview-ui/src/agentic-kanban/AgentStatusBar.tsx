@@ -2,7 +2,7 @@
 // Shows which coding agent runs the board, whether it is signed in, and the
 // permission posture — with one-click fixes when the agent can't run.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { vscode } from '../vscodeApi';
 import { Popover } from './Popover';
 import './AgentUx.css';
@@ -47,20 +47,35 @@ export function AgentStatusBar({ compact = false }: { compact?: boolean } = {}) 
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(true);
 
+  const checking = useRef(true);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const msg = event.data;
       if (msg?.type === 'harness:status') {
+        checking.current = false;
         setStatus(msg as AgentStatus);
         setBusy(false);
       }
     };
+    // People sign in from their own terminal, then come back to the board:
+    // check again then, instead of showing "Signed out" until ↻ is pressed.
+    const onFocus = () => {
+      if (checking.current) return;
+      checking.current = true;
+      vscode.postMessage({ type: 'harness:getStatus' });
+    };
     window.addEventListener('message', onMessage);
+    window.addEventListener('focus', onFocus);
     vscode.postMessage({ type: 'harness:getStatus' });
-    return () => window.removeEventListener('message', onMessage);
+    return () => {
+      window.removeEventListener('message', onMessage);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   const send = (message: Record<string, unknown>) => {
+    checking.current = true;
     setBusy(true);
     vscode.postMessage(message);
   };
