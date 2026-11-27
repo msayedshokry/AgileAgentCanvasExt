@@ -120,9 +120,14 @@ export function detectArtifactType(data: any, fileName: string): string {
     
     // Check filename patterns (use word-boundary-aware matching to avoid false positives)
     const lowerName = fileName.toLowerCase();
-    // Standalone epic files in epics/ subdirectory (e.g. epic-1.json, epic-15.json)
-    if (/^epic-[a-z0-9_-]+\.json$/.test(lowerName)) return 'epic';
-    if (/\bepics?\b/.test(lowerName)) return 'epics';
+    // Epic rules look at the file's own name: `fileName` is the path relative
+    // to the output folder, and every project has an `epics/` folder. A name
+    // alone is weak evidence, so a standalone epic file must also carry an id.
+    const baseName = lowerName.split('/').pop() ?? lowerName;
+    const epicId = data.content?.id ?? data.id;
+    // Standalone epic files (e.g. epics/epic-1.json, epic-15.json)
+    if (/^epic-[a-z0-9_-]+\.json$/.test(baseName) && typeof epicId === 'string' && epicId) return 'epic';
+    if (/^epics\b/.test(baseName)) return 'epics';
     if (/\bstory\b|\bstories\b/.test(lowerName)) return 'story';
     if (lowerName.startsWith('uc-') || /\buse-case\b|\busecase\b/.test(lowerName)) return 'use-case';
     if (/\brequirement/.test(lowerName)) return 'requirements';
