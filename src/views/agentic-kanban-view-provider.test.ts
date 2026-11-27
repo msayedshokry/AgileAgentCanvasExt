@@ -345,3 +345,35 @@ describe('AgenticKanbanViewProvider — harness results reach the board', () => 
         expect(harnessMessages(view, 'HR-EARLY')).toHaveLength(1);
     });
 });
+
+describe('AgenticKanbanViewProvider — broadcasts reach the board inside the Canvas', () => {
+    function newProvider(): AgenticKanbanViewProvider {
+        const fakeStore = { onDidChangeArtifacts: () => ({ dispose: () => undefined }) };
+        return new AgenticKanbanViewProvider(vscode.Uri.file('/mock/uri'), fakeStore as never);
+    }
+
+    it('posts to every extra board host even when the side view is closed', () => {
+        // The Canvas panel embeds the board; without this its Inbox and progress never update.
+        const provider = newProvider();
+        const canvas = { postMessage: vi.fn(() => Promise.resolve(true)) };
+        provider.setExtraTargets(() => [canvas as never]);
+
+        provider.broadcast({ type: 'kanban:inbox', items: [] });
+
+        expect(canvas.postMessage).toHaveBeenCalledWith({ type: 'kanban:inbox', items: [] });
+    });
+
+    it('still posts to the side view, and one failing host does not stop the others', () => {
+        const provider = newProvider();
+        const view = makeFakeWebviewView();
+        provider.resolveWebviewView(view as never, {} as never, {} as never);
+        const broken = { postMessage: vi.fn(() => { throw new Error('disposed'); }) };
+        const canvas = { postMessage: vi.fn(() => Promise.resolve(true)) };
+        provider.setExtraTargets(() => [broken as never, canvas as never]);
+
+        provider.broadcast({ type: 'kanban:progress', artifactId: 'S-1', line: 'running tests' });
+
+        expect(view.webview.postMessage).toHaveBeenCalledWith({ type: 'kanban:progress', artifactId: 'S-1', line: 'running tests' });
+        expect(canvas.postMessage).toHaveBeenCalledTimes(1);
+    });
+});

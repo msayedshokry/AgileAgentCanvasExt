@@ -1,0 +1,189 @@
+/* ─── App header: project · Plan | Agents · global actions ──────────────────
+ * Same language as the Agentic board: hairline rules, quiet outlined
+ * controls, mono kickers, colour only where it carries meaning (the phase
+ * colour of the selected section, green for live agents, orange for
+ * "needs you"). */
+
+.app-header {
+  position: relative;
+  z-index: 900; /* popovers (model, ⋯) must sit above the canvas */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  background: var(--paper);
+  border-bottom: var(--rule-width) solid var(--rule);
+}
+
+/* ── Project chip ── */
+.app-header-project {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 var(--space-2);
+  background: transparent;
+  color: var(--ink-2);
+  border: var(--rule-width) solid transparent;
+  border-radius: var(--radius);
+  font: var(--weight-strong) var(--text-small) / 1 var(--font-ui);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.app-header-project:hover {
+  background: var(--paper-wash);
+  border-color: var(--rule);
+  color: var(--ink);
+}
+.app-header-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+/* ── Plan | Agents switch ── */
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--paper-wash);
+  border: var(--rule-width) solid var(--rule);
+  border-radius: calc(var(--radius) + 3px);
+}
+
+.view-switch-tab {
+  --tab-accent: var(--ink-3);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 var(--space-4) 0 var(--space-3);
+  background: transparent;
+  color: var(--ink-2);
+  border: 0;
+  border-radius: var(--radius);
+  font: var(--weight-strong) 12.5px / 1 var(--font-ui);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.view-switch-tab svg {
+  color: var(--tab-accent);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.view-switch-tab:hover:not(.is-selected) {
+  background: color-mix(in srgb, var(--vscode-foreground) 6%, transparent);
+  color: var(--ink);
+}
+.view-switch-tab:active {
+  transform: translateY(0.5px);
+}
+.view-switch-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.view-switch-tab.is-selected {
+  background: var(--surface-card);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--card-edge), var(--shadow-card);
+}
+/* The selected section takes its phase colour: planning blue, agents green. */
+.view-switch-tab--plan.is-selected   { --tab-accent: var(--phase-planning); }
+.view-switch-tab--agents.is-selected { --tab-accent: var(--phase-implementation); }
+
+/* Live agents: a green dot with a slow ring. */
+.view-switch-live {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vscode-charts-green, #22c55e);
+}
+.view-switch-live::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: view-switch-pulse 1.8s var(--ease-out) infinite;
+}
+@keyframes view-switch-pulse {
+  from { transform: scale(1); opacity: 0.55; }
+  to   { transform: scale(2.6); opacity: 0; }
+}
+
+/* Inbox count: something waits on the user. */
+.view-switch-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--vscode-charts-orange, #d18616);
+  color: #1b1b1b;
+  font: 700 var(--text-kicker) / 18px var(--font-mono);
+  text-align: center;
+}
+
+/* ── Global actions ── */
+.app-header-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+/* Model + Workflows stay one segmented pair; ⋯ and theme follow. */
+.app-header-actions .top-actions {
+  position: static;
+}
+.app-header-actions .toolbar-fab-container {
+  position: static;
+}
+
+/* ── Plan action bar (second row, Plan view only) ── */
+.app-actionbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--paper);
+  border-bottom: var(--rule-width) solid var(--rule);
+}
+.app-actionbar-kicker {
+  font: var(--weight-strong) var(--text-kicker) / 1 var(--font-mono);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.app-actionbar .toolbar-fab-container {
+  position: static;
+}
+
+/* Narrow panels: icons only, keep the switch readable. */
+@media (max-width: 760px) {
+  .app-header { grid-template-columns: auto 1fr auto; }
+  .app-header-project-name,
+  .app-header-actions .workflow-fab-label,
+  .app-header-actions .provider-selector-label,
+  .app-actionbar .toolbar-btn-label,
+  .app-actionbar-kicker {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-switch-live::after { animation: none; }
+  .view-switch-tab:active { transform: none; }
+}
+
+@media (forced-colors: active) {
+  .view-switch-tab.is-selected { outline: 2px solid CanvasText; }
+  .view-switch-live, .view-switch-count { forced-color-adjust: none; }
+}

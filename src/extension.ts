@@ -178,6 +178,8 @@ export function activate(context: vscode.ExtensionContext) {
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
+    // The Canvas panel embeds the board, so it needs the same live pushes (Inbox, progress, scheduler).
+    agenticKanbanProvider.setExtraTargets(() => openCanvasPanels.map((p) => p.webview));
     // What waits on the user (stopped runs, approvals, paused stories, autopilots):
     // a status-bar count, and the board's Inbox kept in sync.
     registerNeedsYou(

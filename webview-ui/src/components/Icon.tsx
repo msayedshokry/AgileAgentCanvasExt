@@ -58,6 +58,8 @@ export type IconName =
   | 'keyboard'        // keyboard shortcuts
   | 'chat'            // chat bubble / ask
   | 'sprint'          // kanban board / sprint view
+  | 'agent'           // AI agent (the agentic board)
+  | 'plan'            // planning canvas (artifact map)
   | 'jira'            // Jira integration
   | 'more-horizontal' // overflow kebab / ⋯ menu trigger
   | 'trash'           // delete / remove
@@ -413,6 +415,25 @@ const paths: Record<IconName, JSX.Element> = {
     // Chat bubble / message
     <>
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  'agent': (
+    // Agent: a rounded head with an antenna and two eyes
+    <>
+      <rect x="4" y="8" width="16" height="12" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 8V4.5M12 4.5h.01" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="9" cy="14" r="1.25" fill="currentColor" />
+      <circle cx="15" cy="14" r="1.25" fill="currentColor" />
+      <path d="M2 13v2M22 13v2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </>
+  ),
+  'plan': (
+    // Planning canvas: three linked artifact cards
+    <>
+      <rect x="2.5" y="3" width="7" height="5" rx="1.25" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="14.5" y="3" width="7" height="5" rx="1.25" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="8.5" y="16" width="7" height="5" rx="1.25" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M6 8v3.5h12V8M12 11.5V16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
     </>
   ),
   'sprint': (

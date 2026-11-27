@@ -1088,7 +1088,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             onClick={() => vscode.postMessage({ type: 'visualPlan:generate', goal: '' })}
             title="Generate a Visual Plan for the current project"
           >
-            Plan
+            Visual plan
           </button>
         </div>
       </header>

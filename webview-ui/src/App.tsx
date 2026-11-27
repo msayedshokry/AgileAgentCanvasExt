@@ -5,6 +5,7 @@ import { Canvas } from './components/Canvas';
 import type { LayoutMode } from './components/Canvas';
 import { AICursor } from './components/AICursor';
 import { Toolbar } from './components/Toolbar';
+import { AppHeader, savedView, type AppView } from './components/AppHeader';
 import { DetailPanel } from './components/DetailPanel';
 import { ElicitationPicker } from './components/ElicitationPicker';
 import { WorkflowLauncher } from './components/WorkflowLauncher';
@@ -122,12 +123,26 @@ function App() {
   // Skill Catalogue modal state
   const [catalogueOpen, setCatalogueOpen] = useState<boolean>(false);
   
-  // Kanban toggle: show agentic execution board in the main canvas area
-  const [showKanban, setShowKanban] = useState<boolean>(false);
+  // Plan (canvas) or Agents (agentic board); reopens on the last one used.
+  const [view, setView] = useState<AppView>(() => savedView(vscode.getState()));
+  const showKanban = view === 'agents';
 
-  const handleToggleKanban = useEvent(() => {
-    setShowKanban(prev => !prev);
+  const handleViewChange = useEvent((next: AppView) => {
+    setView(next);
+    const current = (vscode.getState() as Record<string, unknown>) ?? {};
+    vscode.setState({ ...current, mainView: next });
   });
+
+  // Live agent activity for the header's Agents tab (the board may not be mounted).
+  const [agentStatuses, setAgentStatuses] = useState<ReadonlyMap<string, string>>(new Map());
+  const [needsYouCount, setNeedsYouCount] = useState<number>(0);
+  const runningCount = useMemo(
+    () => [...agentStatuses.values()].filter((s) => s === 'running' || s === 'queued').length,
+    [agentStatuses],
+  );
+  useEffect(() => {
+    vscode.postMessage({ type: 'kanban:getInbox' });
+  }, []);
 
   // Canvas search state (SearchBox rendered in App, to the left of workflow FAB)
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
@@ -434,6 +449,18 @@ function App() {
     console.log('Canvas received message:', message.type);
 
     switch (message.type) {
+      case 'agentStateUpdated':
+        if (typeof message.artifactId === 'string' && typeof message.agentState?.status === 'string') {
+          setAgentStatuses((prev) => new Map(prev).set(message.artifactId, message.agentState.status));
+        }
+        break;
+      case 'kanban:inbox':
+        if (Array.isArray(message.items)) setNeedsYouCount(message.items.length);
+        break;
+      case 'kanban:focusCard':
+        // "Needs you" from the status bar: the card lives on the Agents board.
+        handleViewChange('agents');
+        break;
       case 'updateArtifacts':
         console.log('Updating artifacts, count:', message.artifacts?.length);
         if (message.artifacts) {
@@ -691,7 +718,7 @@ function App() {
   });
 
   const handleStartTour = useEvent(() => {
-    setShowKanban(false);
+    handleViewChange('plan');
     setTourOpen(true);
   });
 
@@ -1313,6 +1340,36 @@ function App() {
   // own handler — it doesn't need to bubble up here. So this layer has no
   // extra wiring; the modal owns that flow.
 
+  // Shared by the header (⋯ menu, theme) and the Plan action bar (Add, Ask, Notes).
+  const toolbarProps = {
+    onAddArtifact: handleAddArtifact,
+    selectedArtifact,
+    onBreakDown: handleBreakDown,
+    onEnhance: handleEnhance,
+    onElicit: handleElicit,
+    themeOverride,
+    onToggleTheme: handleToggleTheme,
+    onExport: handleExport,
+    onImport: handleImport,
+    onHelp: handleOpenHelp,
+    onStartTour: handleStartTour,
+    onAsk: handleOpenAsk,
+    onSprintView: handleOpenSprintView,
+    onJira: handleOpenJira,
+    onGraphify: handleOpenGraphify,
+    graphifyReady,
+    schemaIssueCount: schemaIssues.length,
+    onFixSchemas: handleFixSchemas,
+    onValidateSchemas: handleValidateSchemas,
+    schemaValidating,
+    schemaFixing,
+    onCatalogue: handleOpenCatalogue,
+    onGeneratePlan: handleGenerateVisualPlan,
+    onToggleIdeas: () => setIdeasOpen(o => !o),
+    ideasOpen,
+    ideasCount: ideas.length,
+  };
+
   if (error) {
     return (
       <div className="app error-state">
@@ -1324,39 +1381,34 @@ function App() {
 
   return (
     <div className={`app ${detailPanelOpen && selectedArtifact ? 'with-detail-panel' : ''}`}>
-      <div className="app-topbar">
-        <Toolbar
-          onAddArtifact={handleAddArtifact}
-          selectedArtifact={selectedArtifact}
-          onBreakDown={handleBreakDown}
-          onEnhance={handleEnhance}
-          onElicit={handleElicit}
-          themeOverride={themeOverride}
-          onToggleTheme={handleToggleTheme}
-          onSwitchProject={handleSwitchProject}
-          activeFolderName={activeFolderName}
-          onExport={handleExport}
-          onImport={handleImport}
-          onHelp={handleOpenHelp}
-          onStartTour={handleStartTour}
-          onAsk={handleOpenAsk}
-          onSprintView={handleOpenSprintView}
-          onJira={handleOpenJira}
-          onGraphify={handleOpenGraphify}
-          graphifyReady={graphifyReady}
-          schemaIssueCount={schemaIssues.length}
-          onFixSchemas={handleFixSchemas}
-          onValidateSchemas={handleValidateSchemas}
-          schemaValidating={schemaValidating}
-          schemaFixing={schemaFixing}
-  onCatalogue={handleOpenCatalogue}
-  onGeneratePlan={handleGenerateVisualPlan}
-  onToggleIdeas={() => setIdeasOpen(o => !o)}
-  ideasOpen={ideasOpen}
-  ideasCount={ideas.length}
-/>
-      </div>
-
+      <AppHeader
+        view={view}
+        onViewChange={handleViewChange}
+        projectName={activeFolderName}
+        onSwitchProject={handleSwitchProject}
+        runningCount={runningCount}
+        needsYouCount={needsYouCount}
+      >
+        <div className="top-actions">
+          <ProviderSelector />
+          <button
+            className="workflow-fab"
+            title="Launch Workflow"
+            onClick={handleOpenWorkflowLauncher}
+            aria-label="Launch Workflow"
+          >
+            <span className="workflow-fab-icon"><Icon name="workflow" size={16} /></span>
+            <span className="workflow-fab-label">Workflows</span>
+          </button>
+        </div>
+        <Toolbar {...toolbarProps} sections={{ plan: false, project: false, menu: true }} />
+      </AppHeader>
+      {view === 'plan' && (
+        <div className="app-actionbar">
+          <span className="app-actionbar-kicker" aria-hidden="true">Canvas</span>
+          <Toolbar {...toolbarProps} sections={{ plan: true, project: false, menu: false }} />
+        </div>
+      )}
       <div className="main-content">
         {showKanban ? (
           <ErrorBoundary label="Agentic Kanban">
@@ -1497,28 +1549,6 @@ function App() {
         onSelectResult={handleSearchSelect}
         onMatchesChange={setSearchMatchIds}
       />
-      {/* Top-right actions, in visual (and tab) order: Kanban · Provider · Workflows */}
-      <div className="top-actions">
-        <button
-          className="kanban-toggle-fab"
-          onClick={handleToggleKanban}
-          title={showKanban ? 'Switch to Canvas view' : 'Switch to Agentic Kanban view'}
-          aria-label={showKanban ? 'Switch to Canvas' : 'Switch to Kanban'}
-        >
-          <Icon name={showKanban ? 'workflow' : 'sprint'} size={16} />
-          <span className="kanban-toggle-label">{showKanban ? 'Canvas' : 'Kanban'}</span>
-        </button>
-        <ProviderSelector />
-        <button
-          className="workflow-fab"
-          title="Launch Workflow"
-          onClick={handleOpenWorkflowLauncher}
-          aria-label="Launch Workflow"
-        >
-          <span className="workflow-fab-icon"><Icon name="workflow" size={18} /></span>
-          <span className="workflow-fab-label">Workflows</span>
-        </button>
-      </div>
       {artifacts.length === 0 && (
         <div className="empty-state">
           <div className="empty-state-icon"><Icon name="empty-canvas" size={48} /></div>

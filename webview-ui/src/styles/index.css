@@ -2362,7 +2362,7 @@ body.ac-force-dark {
 .sb-overlay {
   position: absolute;
   top: 12px;
-  right: 140px; /* sits to the left of the ~120px workflow-fab + 16px gap */
+  right: 12px;
   z-index: 899;
   animation: filterBarSlideIn 0.15s ease-out;
 }
@@ -2979,9 +2979,8 @@ body.ac-force-dark {
   display: flex;
   flex: 1;
   overflow: hidden;
-  /* Top padding clears the absolute-positioned toolbar/FAB zone (~48px)
-     so content (Canvas, Mindmap, 3D Corpus, Kanban) isn't hidden behind it. */
-  padding-top: 48px;
+  /* The header and Plan action bar are in normal flow above this. */
+  padding-top: 0;
 }
 
 .app.with-detail-panel .canvas {
@@ -8897,15 +8896,6 @@ body.ac-force-dark {
 }
 
 /* Topbar wrapper: holds the existing Toolbar + the new ProviderSelector */
-.app-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-right: 8px;
-  border-bottom: 1px solid var(--vscode-editorGroup-border, rgba(255, 255, 255, 0.05));
-}
-
 /* ─── Chat Provider Selector (FAB — matches .workflow-fab styling) ─────── */
 
 .provider-selector {
@@ -9075,76 +9065,26 @@ body.ac-force-dark {
  * right offsets, which collided with the left toolbar when the detail panel
  * opened. */
 .top-actions {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 900;
   display: flex;
   align-items: center;
   gap: 0;
 }
 
-/* Segmented: the three tool buttons share hairlines; only the outer
- * corners are rounded. Hovered/focused segment rises above its neighbours
- * so its stronger rule isn't hidden. */
-.top-actions .kanban-toggle-fab { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.top-actions .provider-selector-trigger { border-radius: 0; margin-left: -1px; }
+/* Segmented: Model and Workflows share a hairline; only the outer corners
+ * are rounded. A hovered/focused segment rises so its stronger rule shows. */
+.top-actions .provider-selector-trigger { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .top-actions .workflow-fab { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
-.top-actions .kanban-toggle-fab:hover,
-.top-actions .kanban-toggle-fab:focus-visible,
 .top-actions .provider-selector-trigger:hover,
 .top-actions .provider-selector-trigger:focus-visible,
 .top-actions .workflow-fab:hover,
 .top-actions .workflow-fab:focus-visible { position: relative; z-index: 1; }
 
-.app.with-detail-panel .top-actions {
-  right: 396px; /* 380px panel + 16px margin */
-}
-
 /* Narrow canvas beside the detail panel: drop text labels, keep icons. */
 @media (max-width: 1280px) {
-  .app.with-detail-panel .kanban-toggle-label,
   .app.with-detail-panel .workflow-fab-label,
   .app.with-detail-panel .provider-selector-label {
     display: none;
   }
-}
-
-.kanban-toggle-fab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
-  min-width: 28px;
-  padding: 0 var(--space-2);
-  background: var(--paper);
-  color: var(--ink-2);
-  border: var(--rule-width) solid var(--rule);
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-small);
-  font-weight: var(--weight-strong);
-  white-space: nowrap;
-  cursor: pointer;
-  box-shadow: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-
-.kanban-toggle-fab:hover {
-  background: var(--paper-wash);
-  color: var(--ink);
-  border-color: var(--rule-strong);
-}
-
-.kanban-toggle-fab:active {
-  background: var(--paper-wash);
-}
-
-.kanban-toggle-label {
-  /* Match .workflow-fab-label so the action row reads as one set. */
-  font-weight: 600;
-  font-size: 11px;
 }
 
 /* ─── Terminal Modal (Agentic Kanban) ──────────────────────────────────── */

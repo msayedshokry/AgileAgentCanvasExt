@@ -46,9 +46,9 @@ export const CANVAS_TOUR_STEPS: readonly TourStep[] = [
   },
   {
     id: 'kanban',
-    target: '.kanban-toggle-fab',
+    target: '.view-switch-tab--agents',
     title: 'Hand Off to Agents',
-    body: 'Send stories to coding agents and track their progress.',
+    body: 'Switch to Agents: coding agents work through your stories here, and the tab shows who is running and what needs you.',
   },
   {
     id: 'more',

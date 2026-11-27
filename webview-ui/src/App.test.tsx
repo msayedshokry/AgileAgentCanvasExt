@@ -909,7 +909,7 @@ describe('App - Additional Message Types', () => {
       });
 
       await waitFor(() => {
-        const switchBtn = document.querySelector('.toolbar-switch-btn');
+        const switchBtn = document.querySelector('.app-header-project');
         expect(switchBtn).toBeInTheDocument();
       });
     });
@@ -923,7 +923,7 @@ describe('App - Additional Message Types', () => {
 
       await waitFor(() => {
         // The button is always visible (doubles as folder browser)
-        const switchBtn = document.querySelector('.toolbar-switch-btn');
+        const switchBtn = document.querySelector('.app-header-project');
         expect(switchBtn).toBeInTheDocument();
       });
     });
@@ -1236,11 +1236,11 @@ describe('App - Toolbar Callbacks', () => {
       });
 
       await waitFor(() => {
-        const switchBtn = document.querySelector('.toolbar-switch-btn') as HTMLElement;
+        const switchBtn = document.querySelector('.app-header-project') as HTMLElement;
         expect(switchBtn).toBeInTheDocument();
       });
 
-      const switchBtn = document.querySelector('.toolbar-switch-btn') as HTMLElement;
+      const switchBtn = document.querySelector('.app-header-project') as HTMLElement;
       fireEvent.click(switchBtn);
 
       expect(mockVsCodeApi.postMessage).toHaveBeenCalledWith({ type: 'switchProject' });

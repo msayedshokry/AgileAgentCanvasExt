@@ -31,6 +31,21 @@ interface ToolbarProps {
   onToggleIdeas?: () => void;
   ideasOpen?: boolean;
   ideasCount?: number;
+  /**
+   * Which parts to render (all by default). The app header renders the menu
+   * (⋯, theme); the Plan action bar renders the plan actions. The project
+   * chip moved to the header, so it is off in both.
+   */
+  sections?: ToolbarSections;
+}
+
+export interface ToolbarSections {
+  /** Add, selection AI actions, Ask, Notes. */
+  plan?: boolean;
+  /** Project folder button. */
+  project?: boolean;
+  /** ⋯ overflow menu and theme toggle. */
+  menu?: boolean;
 }
 
 /** All artifact types that can be created via the Add menu. */
@@ -76,7 +91,10 @@ const ROOT_TYPES: Set<Artifact['type']> = new Set([
   'epic', 'requirement', 'prd', 'architecture', 'vision', 'product-brief',
 ]);
 
-export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onStartTour, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan, onToggleIdeas, ideasOpen, ideasCount }: ToolbarProps) {
+export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhance, onElicit, themeOverride, onToggleTheme, onSwitchProject, activeFolderName, onExport, onImport, onHelp, onStartTour, onAsk, schemaIssueCount, onFixSchemas, onValidateSchemas, schemaValidating, schemaFixing, onSprintView, onJira, onGraphify, graphifyReady, onCatalogue, onGeneratePlan, onToggleIdeas, ideasOpen, ideasCount, sections }: ToolbarProps) {
+  const showPlan = sections?.plan ?? true;
+  const showProject = sections?.project ?? true;
+  const showMenu = sections?.menu ?? true;
   const [open, setOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,7 +156,7 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
   return (
     <div className="toolbar-fab-container" ref={containerRef}>
       {/* Primary add button */}
-      <button
+      {showPlan && (<button
         className={`toolbar-fab-btn${open ? ' open' : ''}`}
         onClick={() => { setOpen(o => !o); setOverflowOpen(false); }}
         title="Add artifact"
@@ -147,39 +165,42 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
       >
         <span className="toolbar-fab-icon">{open ? <Icon name="close" size={16} /> : <Icon name="plus" size={16} />}</span>
         <span className="toolbar-fab-label">Add</span>
-      </button>
+      </button>)}
 
       {/* Context AI actions — only when an artifact is selected */}
-      {canEnhance && (
+      {showPlan && canEnhance && (
         <button
           className="toolbar-ai-btn"
           onClick={() => onEnhance?.(selectedArtifact!)}
           title="Ask AI to enhance selected item"
         >
           <Icon name="sparkle" size={16} />
+          <span className="toolbar-btn-label">Enhance</span>
         </button>
       )}
-      {canBreakDown && (
+      {showPlan && canBreakDown && (
         <button
           className="toolbar-ai-btn"
           onClick={() => onBreakDown?.(selectedArtifact!)}
           title={`Break down ${selectedArtifact!.type} into stories`}
         >
           <Icon name="split" size={16} />
+          <span className="toolbar-btn-label">Break down</span>
         </button>
       )}
-      {canEnhance && (
+      {showPlan && canEnhance && (
         <button
           className="toolbar-ai-btn"
           onClick={() => onElicit?.(selectedArtifact!)}
           title="Elicit with advanced method"
         >
           <Icon name="crystal-ball" size={16} />
+          <span className="toolbar-btn-label">Elicit</span>
         </button>
       )}
 
-      {/* Switch / browse project folder button — always visible */}
-      {onSwitchProject && (
+      {/* Switch / browse project folder button */}
+      {showProject && onSwitchProject && (
         <button
           className="toolbar-switch-btn"
           onClick={onSwitchProject}
@@ -193,18 +214,19 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
       )}
 
       {/* Ask / Chat button — always visible as a starting point for the user */}
-      {onAsk && (
+      {showPlan && onAsk && (
         <button
           className="toolbar-ask-btn"
           onClick={onAsk}
           title="Ask Agile Agent Canvas a question"
         >
           <Icon name="chat" size={16} />
+          <span className="toolbar-btn-label">Ask</span>
         </button>
       )}
 
       {/* Notes button — toggle the Notes drawer. Always visible; primary capture gesture. */}
-      {onToggleIdeas && (
+      {showPlan && onToggleIdeas && (
         <button
           className={`toolbar-ideas-btn${ideasOpen ? ' open' : ''}`}
           onClick={onToggleIdeas}
@@ -213,6 +235,7 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
           aria-expanded={!!ideasOpen}
         >
           <Icon name="note" size={16} />
+          <span className="toolbar-btn-label">Notes</span>
           {typeof ideasCount === 'number' && ideasCount > 0 && (
             <span className="toolbar-ideas-badge">{ideasCount}</span>
           )}
@@ -220,7 +243,7 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
       )}
 
       {/* Overflow kebab — absorbs Export / Import / Schema / Sprint / Jira / Graphify / Catalogue / Help */}
-      <div className="toolbar-overflow-wrapper">
+      {showMenu && (<div className="toolbar-overflow-wrapper">
         <button
           className={`toolbar-overflow-btn${overflowOpen ? ' open' : ''}`}
           onClick={() => { setOverflowOpen(o => !o); setOpen(false); }}
@@ -336,11 +359,10 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
             )}
           </div>
         )}
-      </div>
-
+      </div>)}
 
       {/* Theme toggle */}
-      {onToggleTheme && (
+      {showMenu && onToggleTheme && (
         <button
           className="toolbar-theme-btn"
           onClick={onToggleTheme}
@@ -355,7 +377,7 @@ export function Toolbar({ onAddArtifact, selectedArtifact, onBreakDown, onEnhanc
       )}
 
       {/* Add artifact popover */}
-      {open && (() => {
+      {showPlan && open && (() => {
         // When nothing is selected or selected type has no children → show ROOT_TYPES.
         // When an artifact is selected with defined children → show only its children.
         const children = selectedArtifact ? ALLOWED_CHILDREN[selectedArtifact.type] : undefined;
