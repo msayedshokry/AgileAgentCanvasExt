@@ -170,24 +170,30 @@ export async function bootstrapGraphify(workspaceRoot: string, extensionPath: st
 
 // ─── Update (incremental) ────────────────────────────────────────────────────
 
-export async function updateGraph(workspaceRoot: string): Promise<void> {
+/**
+ * `quiet`: the update was started by a file change, not by you. It shows in
+ * the status bar instead of a notification, and success isn't announced.
+ */
+export async function updateGraph(workspaceRoot: string, opts: { quiet?: boolean } = {}): Promise<void> {
     if (!vscode.workspace.isTrusted) { return; }
     const status = detectGraphify(workspaceRoot);
     if (!status.graphPresent) {
-        vscode.window.showWarningMessage('No graphify graph found. Run "Bootstrap graphify" first.');
+        if (!opts.quiet) vscode.window.showWarningMessage('No graphify graph found. Run "Bootstrap graphify" first.');
         return;
     }
+    const location = opts.quiet ? vscode.ProgressLocation.Window : vscode.ProgressLocation.Notification;
     await vscode.window.withProgress(
-        { location: vscode.ProgressLocation.Notification, title: 'graphify: updating graph…', cancellable: true },
+        { location, title: 'graphify: updating graph…', cancellable: !opts.quiet },
         async (_progress, token) => {
             const result = await runGraphify(GFY.update(), { cwd: workspaceRoot, cancellation: token });
-            if (result.success) {
-                // Regenerate clustering + report after code graph update (replaces deprecated `index` command)
+            // graphify 0.9+ reclusters and rewrites the report during update;
+            // older versions need a separate cluster-only pass.
+            if (result.success && !/GRAPH_REPORT\.md updated/.test(result.stdout)) {
                 await runGraphify(GFY.clusterOnly(), { cwd: workspaceRoot, cancellation: token });
             }
             clearGraphifyCache(workspaceRoot);
             if (result.success) {
-                vscode.window.showInformationMessage('graphify graph updated.');
+                if (!opts.quiet) vscode.window.showInformationMessage('graphify graph updated.');
             } else {
                 vscode.window.showErrorMessage('graphify update failed. See output channel for details.');
             }

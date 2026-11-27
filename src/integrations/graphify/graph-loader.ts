@@ -42,7 +42,9 @@ export function loadGraph(workspaceRoot: string): GraphJson | null {
         }
 
         const raw = fs.readFileSync(jsonPath, 'utf-8');
-        const graph: GraphJson = JSON.parse(raw);
+        const parsed = JSON.parse(raw) as GraphJson & { links?: GraphJson['edges'] };
+        // graphify writes networkx node-link JSON: relationships are "links".
+        const graph: GraphJson = parsed.edges ? parsed : { ...parsed, edges: parsed.links ?? [] };
         const communities = extractCommunities(graph);
 
         _cache.set(workspaceRoot, { mtime, graph, communities, report: '' });

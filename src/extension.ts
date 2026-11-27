@@ -71,6 +71,8 @@ import {
     installGraphifyHook,
     detectGraphify,
     clearGraphifyCache} from './integrations/graphify';
+import { singleFlight } from './integrations/graphify/single-flight';
+import { changeAffectsGraph } from './integrations/graphify/graph-watch-filter';
 import { detectHeadroom, disposeHeadroomClient, startInProcessProxy } from './integrations/headroom';
 import { JiraSecrets } from './integrations/jira-secrets';
 import { createLogger, setLoggerOutputSink } from './utils/logger';
@@ -870,35 +872,23 @@ export function activate(context: vscode.ExtensionContext) {
                 false, false, true  // only create/change events, not delete
             );
             const outputFolderName = vscode.workspace.getConfiguration('agileagentcanvas').get<string>('outputFolder', '.agileagentcanvas-context');
-            graphifyWatcher.onDidChange((uri) => {
-                // Ignore files written by graphify itself to avoid an infinite update loop
-                if (uri.fsPath.includes('graphify-out')) { return; }
-                // Ignore artifact store files — card drags trigger .md writes in
-                // the output folder that don't reflect source-code changes.
-                if (uri.fsPath.includes(outputFolderName)) { return; }
-                if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
-                autoUpdateTimer = setTimeout(async () => {
-                    const root = rootFolder.uri.fsPath;
-                    const st = detectGraphify(root);
-                    if (st.graphPresent) {
-                        clearGraphifyCache(root);
-                        await updateGraph(root);
-                    }
-                }, 5000);
+            // One update at a time: saves during a slow update queue one more run,
+            // instead of stacking parallel updates (and their notifications).
+            const autoUpdateGraph = singleFlight(async () => {
+                const root = rootFolder.uri.fsPath;
+                if (!detectGraphify(root).graphPresent) return;
+                clearGraphifyCache(root);
+                await updateGraph(root, { quiet: true });
             });
-            graphifyWatcher.onDidCreate((uri) => {
-                if (uri.fsPath.includes('graphify-out')) { return; }
-                if (uri.fsPath.includes(outputFolderName)) { return; }
+            // graphify's own output, board artifacts, agent worktrees and backups
+            // never reach the graph, so they don't start an update.
+            const onSourceChange = (uri: vscode.Uri) => {
+                if (!changeAffectsGraph(uri.fsPath, outputFolderName)) { return; }
                 if (autoUpdateTimer) { clearTimeout(autoUpdateTimer); }
-                autoUpdateTimer = setTimeout(async () => {
-                    const root = rootFolder.uri.fsPath;
-                    const st = detectGraphify(root);
-                    if (st.graphPresent) {
-                        clearGraphifyCache(root);
-                        await updateGraph(root);
-                    }
-                }, 5000);
-            });
+                autoUpdateTimer = setTimeout(() => { void autoUpdateGraph(); }, 5000);
+            };
+            graphifyWatcher.onDidChange(onSourceChange);
+            graphifyWatcher.onDidCreate(onSourceChange);
             context.subscriptions.push(graphifyWatcher);
         }
     }

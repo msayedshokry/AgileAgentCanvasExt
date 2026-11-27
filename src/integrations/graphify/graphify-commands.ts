@@ -4,7 +4,7 @@
  * When the graphify API changes between versions, update only this file.
  * All callers use GFY.* rather than hardcoded string arrays.
  *
- * Tested against graphify 0.7.16.
+ * Tested against graphify 0.7.16 and 0.9.121.
  */
 
 const DOT = '.';

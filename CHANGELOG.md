@@ -115,6 +115,15 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Signing in to an agent from your own terminal now shows up when you come back to the board; it no longer says "Signed out" until you press refresh.
 - After Sign in or How to install, the agent panel no longer stays busy.
 - Dragging an epic into In Progress with no lead agent now says nothing ran and what to do (move its stories, or add a lead), instead of a plain "Moved".
+- While an agent edits code, the knowledge graph updates one run at a time, shown in the status bar, instead of stacking "graphify: updating graph" notifications. Edits inside agent worktrees, backups and board files no longer start an update.
+
+### Fixed: Agents now use the code graph
+
+- Agents run in their card's worktree, where the graph isn't present, so they never queried it and searched files instead. Their brief now says how to query the project's graph, when one exists.
+- The extension read none of the graph's relationships: graphify stores them as "links", and the extension only looked for "edges".
+- On graphify 0.9, updates skip a second clustering pass that the update already does.
+- Tested with graphify 0.9.121. Earlier versions also indexed agent worktree copies and other folders that git ignores; updating to 0.9 and running an update removes them from an existing graph.
+
 
 ### Fixed: Saving no longer rewrites your project files
 

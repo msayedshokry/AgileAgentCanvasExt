@@ -103,6 +103,8 @@ import { budgetEnforcer } from './budget-enforcer';
 import { costTracker } from '../chat/cost-tracker';
 import { readCliUsage } from './harness/cli-usage';
 import { ensureProjectContext, readProjectContext } from './harness/project-context';
+import { codeGraphHint } from '../integrations/graphify/agent-graph-hint';
+import { detectGraphify } from '../integrations/graphify/graphify-detector';
 import { pathWithoutWindowsApps, shouldRunNodeTestsInProcess, userNodeVersion } from './harness/windows-sandbox';
 
 /** Create project-context.md on first use and return its text (never throws). */
@@ -115,6 +117,13 @@ function loadProjectContext(outputFolder: string): string | undefined {
     logger.debug(`[TerminalExecutor] project context unavailable: ${errMsg(err)}`);
     return undefined;
   }
+}
+
+/** Project context plus, when a code graph exists, how to query it (agents in worktrees can't see graphify-out/). */
+function withCodeGraphHint(context: string | undefined, root: string | undefined, runDir: string | undefined): string | undefined {
+  const hint = codeGraphHint({ root, runDir: runDir ?? root, exists: fs.existsSync, hasCli: () => !!root && detectGraphify(root).cliForm === 'cli' });
+  if (!hint) return context;
+  return context ? `${context.trimEnd()}\n\n${hint}` : hint;
 }
 
 const execAsync = promisify(cp.exec);
@@ -685,7 +694,7 @@ export class TerminalExecutor implements vscode.Disposable {
     const sessionPlan = options?.freshSession ? undefined : this.planCardSession(adapter, artifactId, workflowId, options?.cwd ?? workspaceDir);
     // A resumed conversation already holds the full brief; send only the new turn.
     const resumed = sessionPlan?.resume === true;
-    const projectContext = resumed ? undefined : loadProjectContext(outputFolder);
+    const projectContext = resumed ? undefined : withCodeGraphHint(loadProjectContext(outputFolder), workspaceDir, options?.cwd);
     const board = await this.prepareBoardLive(adapter, sessionId, artifactId, assignee, outputFolder);
     const brief = this.briefFor(artifact, assignee, adapter.label, assignee?.harness === adapter.id ? assignee.model : undefined, resumed, outputFolder, options?.cwd ?? workspaceDir, !!board);
     const prompt = resumed
