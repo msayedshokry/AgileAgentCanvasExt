@@ -236,3 +236,13 @@ button.card-page-crumb:hover { color: var(--ink); text-decoration: underline; te
 .card-page .card-page-stop { color: var(--vscode-editorError-foreground, #c4314b); }
 .card-page .agentic-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .card-page-terminal .agentic-btn { align-self: flex-start; }
+
+/* A live question from the agent: plain section, answer box under it. */
+.card-page-question { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: var(--rule-width) solid var(--vscode-editorWarning-foreground, var(--accent)); border-radius: var(--radius-card); }
+.card-page-question-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.card-page-question .agent-fixit-answer { display: flex; flex-direction: column; gap: var(--space-2); }
+.card-page-question textarea { min-height: 52px; resize: vertical; padding: 6px var(--space-2); background: var(--vscode-input-background, var(--paper)); color: var(--vscode-input-foreground, var(--ink)); border: 1px solid var(--vscode-input-border, var(--rule)); border-radius: var(--radius); font: inherit; }
+.card-page-question .agent-btn { align-self: flex-end; }
+.card-page-person-note { margin: 0; padding: var(--space-3) 0; font-size: 13px; color: var(--ink-2); border-top: var(--rule-width) solid var(--rule); }
+.card-page-side .agentic-collapse-summary { justify-content: flex-start; gap: 6px; }
+.card-page-side .agentic-collapse-summary .agentic-collapse-badge { margin-left: auto; }

@@ -116,6 +116,7 @@ vi.mock('../workflow/kanban-settings', () => ({
 // Now import the module under test (after mocks are established).
 import * as vscode from 'vscode';
 import { AgenticKanbanViewProvider } from './agentic-kanban-view-provider';
+import { addBoardHost, clearBoardHosts } from './board-hosts';
 import { harnessEngine, type HarnessEvaluatedEvent } from '../harness/policy-engine';
 
 interface MockMessageHandler {
@@ -351,12 +352,13 @@ describe('AgenticKanbanViewProvider — broadcasts reach the board inside the Ca
         const fakeStore = { onDidChangeArtifacts: () => ({ dispose: () => undefined }) };
         return new AgenticKanbanViewProvider(vscode.Uri.file('/mock/uri'), fakeStore as never);
     }
+    afterEach(() => clearBoardHosts());
 
     it('posts to every extra board host even when the side view is closed', () => {
         // The Canvas panel embeds the board; without this its Inbox and progress never update.
         const provider = newProvider();
         const canvas = { postMessage: vi.fn(() => Promise.resolve(true)) };
-        provider.setExtraTargets(() => [canvas as never]);
+        addBoardHost(canvas as never);
 
         provider.broadcast({ type: 'kanban:inbox', items: [] });
 
@@ -369,7 +371,8 @@ describe('AgenticKanbanViewProvider — broadcasts reach the board inside the Ca
         provider.resolveWebviewView(view as never, {} as never, {} as never);
         const broken = { postMessage: vi.fn(() => { throw new Error('disposed'); }) };
         const canvas = { postMessage: vi.fn(() => Promise.resolve(true)) };
-        provider.setExtraTargets(() => [broken as never, canvas as never]);
+        addBoardHost(broken as never);
+        addBoardHost(canvas as never);
 
         provider.broadcast({ type: 'kanban:progress', artifactId: 'S-1', line: 'running tests' });
 

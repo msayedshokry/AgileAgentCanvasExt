@@ -1,3 +1,4 @@
+import { onBoardHostAdded, postToBoardHosts } from './board-hosts';
 import { createLogger } from '../utils/logger';
 const logger = createLogger('agentic-kanban-view-provider');
 import * as vscode from 'vscode';
@@ -37,6 +38,14 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
   ) {
     this.store = store;
 
+    // A board opened in another webview (the Canvas tab) gets the run states
+    // that happened before it opened, as this view does when it resolves.
+    onBoardHostAdded((webview) => {
+      for (const [artifactId, { agentState, lockInfo }] of this.pendingAgentStates) {
+        void webview.postMessage({ type: 'agentStateUpdated', artifactId, agentState, lockInfo });
+      }
+    });
+
     // Listen to artifact changes and push to Kanban view.
     // No explicit dispose needed — ArtifactStore cleans up listeners on deactivation.
     this.store.onDidChangeArtifacts(() => {
@@ -74,13 +83,11 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
     // Buffer pending states so they can be replayed when the webview opens
     this.pendingAgentStates.set(artifactId, { agentState, lockInfo });
 
-    // Every board host, including the Canvas panel (its header counts running agents).
-    this.broadcast({
-      type: 'agentStateUpdated',
-      artifactId,
-      agentState,
-      lockInfo,
-    });
+    const message = { type: 'agentStateUpdated', artifactId, agentState, lockInfo };
+    // Every webview showing the board: the Canvas tab as well as this view.
+    postToBoardHosts(message, this._view?.webview);
+    if (!this._view) return;
+    this._view.webview.postMessage(message);
   }
 
   /**
@@ -90,23 +97,13 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
    * don't have a dedicated method. Silently no-ops if the view is not open.
    */
   broadcast(message: any): void {
-    const targets = [this._view?.webview, ...this.extraTargets()];
-    for (const webview of targets) {
-      if (!webview) continue;
-      try {
-        void webview.postMessage(message);
-      } catch (err) {
-        logger.debug(`[AgenticKanbanProvider] broadcast failed: ${errMsg(err)}`);
-      }
+    postToBoardHosts(message, this._view?.webview);
+    if (!this._view) return;
+    try {
+      this._view.webview.postMessage(message);
+    } catch (err) {
+      logger.debug(`[AgenticKanbanProvider] broadcast failed: ${errMsg(err)}`);
     }
-  }
-
-  /** Other webviews that host the board — the Canvas panel embeds it. */
-  private extraTargets: () => readonly vscode.Webview[] = () => [];
-
-  /** Let `broadcast` also reach board hosts outside this view (read on every send). */
-  setExtraTargets(targets: () => readonly vscode.Webview[]): void {
-    this.extraTargets = targets;
   }
 
   resolveWebviewView(

@@ -4,7 +4,7 @@ import { cardAction } from '../components/kanban/KanbanCard';
 import './CardPage.css';
 import { vscode } from '../vscodeApi';
 import { useEvent } from './useEvent';
-import { RunInsights } from './RunInsights';
+import { AnswerQuestions, RunInsights } from './RunInsights';
 import type { AgentTeamView } from './agent-team-view';
 import { FollowUpComposer } from './FollowUpComposer';
 import { EpicContextEditor } from './EpicContextEditor';
@@ -49,6 +49,10 @@ interface AgenticDetailPanelProps {
   onOpenCard?: (artifactId: string) => void;
   /** An epic's stories, for its progress, story list and breakdown. */
   stories?: readonly KanbanItem[];
+  /** Questions an agent asked while it runs (board_ask), from the Inbox. */
+  pendingQuestions?: readonly string[];
+  /** The Inbox shows the answer box beside this page; don't repeat it here. */
+  answerElsewhere?: boolean;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -112,6 +116,8 @@ export function AgenticDetailPanel({
   onApprove,
   onOpenCard,
   stories = [],
+  pendingQuestions,
+  answerElsewhere = false,
 }: AgenticDetailPanelProps) {
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(() => {
     const cached = infoCache?.current.get(item.id);
@@ -274,6 +280,8 @@ export function AgenticDetailPanel({
   const composerRef = useRef<HTMLDivElement>(null);
   const action = cardAction(item);
   const inReview = item.status === 'review';
+  /** A person works this card by hand: no agent to message, retry or resume. */
+  const isPersonCard = !!item.assignee?.person;
   const statusLabel = COLUMN_LABEL[normalizeToKanbanColumn(item.status)] ?? item.status;
 
   // "Request changes" is a message to the agent: focus the composer.
@@ -349,10 +357,22 @@ export function AgenticDetailPanel({
             </section>
           ) : null}
 
+          {/* ── A running agent asked something (board_ask) and waits for the answer ── */}
+          {pendingQuestions && pendingQuestions.length > 0 && !answerElsewhere && item.agentState?.failure?.kind !== 'needs-answer' && (
+            <section className="card-page-question" aria-label="The agent is waiting for your answer">
+              <h3 className="card-page-section-title">Waiting for your answer</h3>
+              <ul className="card-page-question-list">{pendingQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul>
+              <AnswerQuestions artifactId={item.id} />
+            </section>
+          )}
+
           {/* ── Why it stopped + fixes, pull request, one activity feed ── */}
-          <RunInsights item={item} trace={recentTrace} />
+          <RunInsights item={item} trace={recentTrace} hideAnswer={answerElsewhere} hideFix={isPersonCard} />
 
           {/* ── Talk to the agent: steer a run, answer it, or ask for changes ── */}
+          {isPersonCard ? (
+            <p className="card-page-person-note">{item.assignee!.name} works this card by hand. Move it along the board when it is done.</p>
+          ) : (
           <div className="card-page-composer" ref={composerRef}>
             <FollowUpComposer artifactId={item.id} isRunning={isRunning} />
             {(isInterrupted || hasPendingUndo) && (
@@ -376,6 +396,7 @@ export function AgenticDetailPanel({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* ── Side: properties, the agent and its run, and what blocks the card ── */}
@@ -537,6 +558,14 @@ export function AgenticDetailPanel({
 
 const COLUMN_LABEL: Record<string, string> = Object.fromEntries(KANBAN_COLUMNS.map(c => [c.key, c.label]));
 
+const squash = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+/** Many artifacts store the formatted user story as the description too; don't show it twice. */
+export function restatesStory(description: string, story: KanbanItem['userStory']): boolean {
+  if (!story?.iWant) return false;
+  const d = squash(description);
+  return d === squash(story.iWant) || d.includes(squash(story.iWant));
+}
+
 /** What the card asks for: its description, user story and acceptance criteria. */
 function CardBrief({ item }: { item: KanbanItem }) {
   const { description, userStory, acceptanceCriteria } = item;
@@ -552,7 +581,7 @@ function CardBrief({ item }: { item: KanbanItem }) {
           {userStory.soThat && <>, so that {userStory.soThat}</>}.
         </p>
       )}
-      {description && description !== userStory?.iWant && <p className="card-page-description">{description}</p>}
+      {description && !restatesStory(description, userStory) && <p className="card-page-description">{description}</p>}
       {acceptanceCriteria && acceptanceCriteria.length > 0 && (
         <>
           <h3 className="card-page-section-title">Acceptance criteria</h3>

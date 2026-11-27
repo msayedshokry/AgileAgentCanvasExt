@@ -470,3 +470,13 @@ describe('AgenticKanbanApp — sidebar', () => {
     expect(card('Billing')).toBeInTheDocument();
   });
 });
+
+describe('AgenticKanbanApp — starting from the card page', () => {
+  it('starts the agent and stays on the page', () => {
+    renderBoard([story('S-9', 'ready-for-dev', 'Page Story')]);
+    fireEvent.click(card('Page Story'));
+    fireEvent.click(screen.getByRole('button', { name: 'Start agent' }));
+    expect(posted('kanban:statusChanged')).toEqual([expect.objectContaining({ artifactId: 'S-9', toStatus: 'in-progress' })]);
+    expect(screen.getByRole('heading', { name: 'Page Story' })).toBeInTheDocument();
+  });
+});

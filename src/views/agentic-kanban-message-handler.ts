@@ -1,3 +1,4 @@
+import { addBoardHost } from './board-hosts';
 import { createLogger } from '../utils/logger';
 const logger = createLogger('agentic-kanban-message-handler');
 import * as vscode from 'vscode';
@@ -332,6 +333,9 @@ export async function handleAgenticKanbanMessage(
   extensionUri: vscode.Uri,
   webview?: vscode.Webview
 ): Promise<boolean> {
+  // Any webview that talks to the board gets its live updates (see board-hosts.ts).
+  if (webview && (message.type.startsWith('kanban:') || message.type === 'agenticKanban:refresh')) addBoardHost(webview);
+
   // ── Terminal protocol routing (backend-agnostic) ─────────────────────────
   if (isTerminalInbound(message)) {
     if (webview) {

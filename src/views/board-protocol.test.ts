@@ -6,6 +6,7 @@ vi.mock('../workflow/kanban-verdict', () => ({ getOutputFolder: () => '' }));
 vi.mock('./follow-up-messages', () => ({ followUpSender: vi.fn() }));
 vi.mock('../workflow/goal-decomposer', () => ({ goalDecomposer: { on: vi.fn(), off: vi.fn(), pendingReview: () => [] } }));
 
+import { liveQuestions } from './board-live';
 import { applyAgentVerdict, epicContextFor, epicOf, proposalKey, saveEpicContext, type BoardProtocolDeps } from './board-protocol';
 import type { AgentTeam } from '../workflow/harness/agent-team';
 import type { KanbanVerdict } from '../workflow/kanban-verdict';
@@ -55,6 +56,14 @@ describe('applyAgentVerdict', () => {
   it('raises the agent\'s questions in the Inbox with their texts', async () => {
     await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'w', agent: dev, verdict: verdict({ questions: ['8 or 12?'], proposals: [] }, { verdict: 'BLOCKED' }) });
     expect(ctx.notified).toEqual([['S-1', 'question', 'Dev asks a question', { details: ['8 or 12?'] }]]);
+  });
+
+  it('does not ask again a question the user answered during the run', async () => {
+    liveQuestions.noteAnswered('S-1', ['Slack or email first?']);
+    await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'w', agent: dev, verdict: verdict({ questions: ['Slack  or EMAIL first', 'Which region?'], proposals: [] }, { verdict: 'BLOCKED' }) });
+    expect(ctx.notified).toEqual([['S-1', 'question', 'Dev asks a question', { details: ['Which region?'] }]]);
+    await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'w', agent: dev, verdict: verdict({ questions: ['Slack or email first?'], proposals: [] }, { verdict: 'BLOCKED' }) });
+    expect(ctx.notified).toHaveLength(2); // a later run that asks again is asked again
   });
 
   it('queues proposals for review in the card\'s epic, with an Inbox entry of their own', async () => {

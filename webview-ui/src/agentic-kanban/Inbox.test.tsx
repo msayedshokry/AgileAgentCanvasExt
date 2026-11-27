@@ -109,10 +109,11 @@ describe('Inbox view — questions, proposals and the card', () => {
     expect(posted).toContainEqual({ type: 'kanban:answerQuestions', artifactId: 'S-1', answer: '12' });
   });
 
-  it('leaves the question to the card page when it shows one', () => {
+  it('shows the question and its answer box above the card page, so a running agent can be answered', () => {
     render(<InboxView entries={[question]} approval={null} onRespondApproval={noop} onOpenCard={noop} renderCard={(id) => <div>card page {id}</div>} />);
     expect(screen.getByText('card page S-1')).toBeTruthy();
-    expect(screen.queryByRole('textbox', { name: 'Answer Login story' })).toBeNull();
+    expect(screen.getByText('Minimum password length: 8 or 12?')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Answer Login story' })).toBeTruthy();
   });
 
   it('lists proposed cards, opens their review, and opens the card they came from', () => {

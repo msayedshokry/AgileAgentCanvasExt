@@ -93,3 +93,34 @@ describe('cardBrief', () => {
     expect(cardBrief({ id: 'E', metadata: { acceptanceCriteria: 'not a list' } })).toEqual({});
   });
 });
+
+describe('restatesStory', () => {
+  it('hides a description that only repeats the user story', async () => {
+    const { restatesStory } = await import('./AgenticDetailPanel');
+    const story = { asA: 'Software Engineer', iWant: 'a URL-safe slug for each task title', soThat: 'links are readable' };
+    expect(restatesStory('As a Software Engineer, I want a URL-safe slug for each task title, so that links are readable.', story)).toBe(true);
+    expect(restatesStory('Slugs use lowercase ASCII and dashes.', story)).toBe(false);
+    expect(restatesStory('Anything', undefined)).toBe(false);
+  });
+});
+
+describe('card page — live questions and people', () => {
+  it('shows a running agent’s question with an answer box, and sends the answer', () => {
+    render(<AgenticDetailPanel item={{ ...STORY, status: 'in-progress', agentState: { status: 'running' } }} onClose={() => undefined} chatSessionActive={false} pendingQuestions={['Slack or email first?']} />);
+    expect(screen.getByRole('region', { name: 'The agent is waiting for your answer' }).textContent).toContain('Slack or email first?');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your answer to the agent' }), { target: { value: 'Slack' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send answer' }));
+    expect(posted).toContainEqual({ type: 'kanban:answerQuestions', artifactId: 'S-1', answer: 'Slack' });
+  });
+
+  it('leaves the answer box to the Inbox when the page is shown inside it', () => {
+    render(<AgenticDetailPanel item={STORY} onClose={() => undefined} chatSessionActive={false} pendingQuestions={['Slack or email first?']} answerElsewhere />);
+    expect(screen.queryByRole('region', { name: 'The agent is waiting for your answer' })).toBeNull();
+  });
+
+  it('offers no agent message box on a card a person works', () => {
+    render(<AgenticDetailPanel item={{ ...STORY, assignee: { id: 'maya', name: 'Maya', person: true } }} onClose={() => undefined} chatSessionActive={false} />);
+    expect(screen.getByText(/Maya works this card by hand/)).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: /Message/ })).toBeNull();
+  });
+});

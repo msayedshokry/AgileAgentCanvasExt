@@ -206,11 +206,11 @@ export function InboxView({ entries, systemItems = [], approval, onRespondApprov
             <div className="inbox-detail-head">
               <span className="inbox-kind">{KIND_LABEL[selected.kind]}</span>
               <p className="inbox-detail-reason">{selected.reason}</p>
-              {/* A question on a card is answered on the card page below; elsewhere, here. */}
-              {!(selected.kind === 'question' && selected.onBoard && renderCard) && selected.details && selected.details.length > 0 && (
+              {selected.details && selected.details.length > 0 && (
                 <ul className="inbox-details">{selected.details.map((d, i) => <li key={i}>{d}</li>)}</ul>
               )}
-              {selected.kind === 'question' && !(selected.onBoard && renderCard) && <AnswerBox entry={selected} />}
+              {/* The Inbox is where you answer; the card page below leaves its own box out. */}
+              {selected.kind === 'question' && <AnswerBox entry={selected} />}
               <EntryActions entry={selected} onOpenCard={onOpenCard} onApprove={onApprove} withCard={selected.onBoard && !!renderCard} />
             </div>
             {selected.onBoard && renderCard && <div className="inbox-detail-card">{renderCard(selected.cardId ?? selected.artifactId)}</div>}

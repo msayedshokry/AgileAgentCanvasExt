@@ -6,6 +6,13 @@ import type { Epic, Story, FunctionalRequirement, NonFunctionalRequirement, Addi
  * Zero store dependencies — operates solely on passed-in data.
  */
 
+/** What the agent board writes on cards; carried through a reload as-is. */
+const BOARD_FIELDS = ['agentNotes', 'fixRequests', 'githubIssue', 'agentContext'] as const;
+
+function boardFields(data: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(BOARD_FIELDS.filter((k) => data[k] !== undefined).map((k) => [k, data[k]]));
+}
+
 /**
 
  * Map epic from schema format to internal Epic type
@@ -198,9 +205,7 @@ export function mapSchemaEpicToInternal(epicData: any): Epic | null {
 
         testStrategy: epicData.testStrategy,
 
-        // Notes agents left on the card (board notes).
-
-        agentNotes: epicData.agentNotes
+        ...boardFields(epicData)
 
     };
 
@@ -459,7 +464,10 @@ export function mapSchemaStoryToInternal(storyData: any): Story | null {
 
         requirementRefs: storyData.requirementRefs,
 
-        uxReferences: storyData.uxReferences,
+        // The schema wants objects; older files list plain file names.
+        uxReferences: Array.isArray(storyData.uxReferences)
+            ? storyData.uxReferences.map((r: unknown) => (typeof r === 'string' ? { reference: r } : r))
+            : storyData.uxReferences,
 
         references: storyData.references,
 
@@ -585,6 +593,7 @@ export function mapSchemaStoryToInternal(storyData: any): Story | null {
 
     };
 
+    Object.assign(mapped, boardFields(storyData));
     // Capture epicId as transient routing hint (not persisted in epics.json)
 
     if (storyData.epicId) {

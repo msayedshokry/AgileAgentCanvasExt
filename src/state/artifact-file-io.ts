@@ -67,55 +67,111 @@ export async function writeJsonFile(targetUri: vscode.Uri, payload: Record<strin
     // Normalize legacy dual-field format before writing so old data is cleaned on save
     const normalizedPayload = normalizeLegacyArtifact(payload);
     let finalPayload: Record<string, unknown> = normalizedPayload;
+    let existingData: unknown;
     try {
         const existingBytes = await vscode.workspace.fs.readFile(targetUri);
-        const existingData = JSON.parse(Buffer.from(existingBytes).toString('utf-8'));
-
-        // Payload-authoritative merge: preserve only foreign keys from disk
-        if (existingData && typeof existingData === 'object' && !Array.isArray(existingData)) {
-            const foreignKeys: Record<string, unknown> = {};
-            for (const key of Object.keys(existingData)) {
-                if (!(key in normalizedPayload)) {
-                    foreignKeys[key] = existingData[key];
-                }
-            }
-            finalPayload = { ...foreignKeys, ...normalizedPayload };
-
-            // Deep-merge BMAD envelope layers so nested foreign keys survive
-            if (normalizedPayload.metadata && existingData.metadata && typeof existingData.metadata === 'object') {
-                const payloadMeta = normalizedPayload.metadata as Record<string, unknown>;
-                const existingMeta = existingData.metadata as Record<string, unknown>;
-                const foreignMeta: Record<string, unknown> = {};
-                for (const k of Object.keys(existingMeta)) {
-                    if (!(k in payloadMeta)) foreignMeta[k] = existingMeta[k];
-                }
-                finalPayload.metadata = { ...foreignMeta, ...payloadMeta };
-
-                // Always preserve original creation timestamp
-                if ((existingMeta.timestamps as Record<string, unknown>)?.created) {
-                    (finalPayload.metadata as Record<string, unknown>).timestamps = {
-                        ...((finalPayload.metadata as Record<string, unknown>).timestamps || {}),
-                        created: (existingMeta.timestamps as Record<string, unknown>).created,
-                    };
-                }
-            }
-            if (normalizedPayload.content && existingData.content && typeof existingData.content === 'object') {
-                const payloadContent = normalizedPayload.content as Record<string, unknown>;
-                const existingContent = existingData.content as Record<string, unknown>;
-                const foreignContent: Record<string, unknown> = {};
-                for (const k of Object.keys(existingContent)) {
-                    if (!(k in payloadContent)) foreignContent[k] = existingContent[k];
-                }
-                finalPayload.content = { ...foreignContent, ...payloadContent };
-            }
-        }
+        existingData = JSON.parse(Buffer.from(existingBytes).toString('utf-8'));
     } catch (e) {
         // File doesn't exist or isn't valid JSON — write payload as-is (CR-4: log it)
         ioLogger.debug(`writeJsonFile: could not read/parse ${targetUri.fsPath}, writing fresh: ${e}`);
     }
+    if (isRecord(existingData)) finalPayload = mergeOverDisk(existingData, normalizedPayload);
+    finalPayload = withCreationTime(finalPayload);
+    // Nothing but the save time changed: leave the file alone.
+    if (isRecord(existingData) && sameIgnoringSaveTime(existingData, finalPayload)) return;
 
     finalPayload = withCreatedTimestamp(finalPayload);
     await vscode.workspace.fs.writeFile(targetUri, Buffer.from(JSON.stringify(finalPayload, null, 2), 'utf-8'));
+}
+
+/** Metadata the writers fill with defaults; the file's own value wins. */
+const DISK_OWNED_METADATA = ['schemaVersion', 'artifactType', 'workflowName'] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * The payload's values over the file's, in the file's key order (new keys
+ * last), so a save changes only what changed. Keys the payload leaves out
+ * or sets to undefined keep the file's value.
+ */
+function keepForeign(disk: Record<string, unknown>, payload: Record<string, unknown>): Record<string, unknown> {
+    const merged: Record<string, unknown> = {};
+    for (const key of Object.keys(disk)) {
+        merged[key] = payload[key] === undefined ? disk[key] : payload[key];
+    }
+    for (const [key, value] of Object.entries(payload)) {
+        if (value !== undefined && !(key in merged)) merged[key] = value;
+    }
+    return merged;
+}
+
+function mergeOverDisk(existing: Record<string, unknown>, payload: Record<string, unknown>): Record<string, unknown> {
+    const merged = keepForeign(existing, payload);
+    if (isRecord(payload.metadata) && isRecord(existing.metadata)) {
+        const meta = keepForeign(existing.metadata, payload.metadata);
+        for (const key of DISK_OWNED_METADATA) {
+            if (existing.metadata[key] !== undefined) meta[key] = existing.metadata[key];
+        }
+        const diskTimes = isRecord(existing.metadata.timestamps) ? existing.metadata.timestamps : {};
+        if (diskTimes.created) {
+            meta.timestamps = { ...(isRecord(meta.timestamps) ? meta.timestamps : {}), created: diskTimes.created };
+        }
+        merged.metadata = meta;
+    }
+    if (isRecord(payload.content) && isRecord(existing.content)) {
+        merged.content = keepForeign(existing.content, payload.content);
+    }
+    return merged;
+}
+
+/** Schemas require `timestamps.created`; a file that never had one gets its first save time. */
+function withCreationTime(doc: Record<string, unknown>): Record<string, unknown> {
+    if (!isRecord(doc.metadata) || !isRecord(doc.metadata.timestamps) || doc.metadata.timestamps.created) return doc;
+    const times = doc.metadata.timestamps;
+    const created = typeof times.lastModified === 'string' ? times.lastModified : new Date().toISOString();
+    return { ...doc, metadata: { ...doc.metadata, timestamps: { created, ...times } } };
+}
+
+/** JSON with object keys sorted, so key order alone never counts as a change. */
+function canonicalJson(value: unknown): string {
+    return JSON.stringify(value, (_key, v: unknown) => (isRecord(v)
+        ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]]))
+        : v));
+}
+
+function withoutSaveTime(doc: Record<string, unknown>): string {
+    if (!isRecord(doc.metadata) || !isRecord(doc.metadata.timestamps)) return canonicalJson(doc);
+    const { lastModified: _l, ...times } = doc.metadata.timestamps;
+    return canonicalJson({ ...doc, metadata: { ...doc.metadata, timestamps: times } });
+}
+
+/** True when the two documents differ at most in `metadata.timestamps.lastModified` and key order. */
+export function sameIgnoringSaveTime(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+    return withoutSaveTime(a) === withoutSaveTime(b);
+}
+
+/** True when the JSON file at `uri` already has this `content` (for files stamped with a generation time). */
+export async function sameContentOnDisk(uri: vscode.Uri, content: unknown): Promise<boolean> {
+    try {
+        const existing = JSON.parse(Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf-8'));
+        return canonicalJson(existing?.content) === canonicalJson(content);
+    } catch {
+        return false;
+    }
+}
+
+/** Write text to a file unless it already holds exactly that text. */
+export async function writeTextIfChanged(uri: vscode.Uri, text: string): Promise<boolean> {
+    try {
+        const existing = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf-8');
+        if (existing === text) return false;
+    } catch {
+        // Not there yet — write it.
+    }
+    await vscode.workspace.fs.writeFile(uri, Buffer.from(text, 'utf-8'));
+    return true;
 }
 
 /**
@@ -289,6 +345,6 @@ function deepClone<T>(obj: T): T {
 export async function writeMarkdownCompanion(jsonUri: vscode.Uri, mdFilename: string, markdownContent: string): Promise<vscode.Uri> {
     const parentUri = vscode.Uri.joinPath(jsonUri, '..');
     const mdUri = vscode.Uri.joinPath(parentUri, mdFilename);
-    await vscode.workspace.fs.writeFile(mdUri, Buffer.from(markdownContent, 'utf-8'));
+    await writeTextIfChanged(mdUri, markdownContent);
     return mdUri;
 }

@@ -71,21 +71,24 @@ export class ArtifactFileWriter {
     } catch {
       // Folder might already exist
     }
-    const targetUri = vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
+    // Save back to the file it was loaded from; only a new artifact gets a new file.
+    const loadedFrom = this.sourceFiles.get(storeKey);
+    const targetUri = loadedFrom ?? vscode.Uri.joinPath(folderUri, `${fileSlug}.json`);
 
-    // Build the JSON envelope: separate id/status into metadata, rest is content
+    // Build the JSON envelope: separate id/status into metadata, rest is content.
+    // A loaded file keeps its own status unless the artifact carries one.
     const { id, status, ...contentFields } = artifact;
     const jsonEnvelope = {
       metadata: {
         schemaVersion: '1.0.0',
-        artifactType: fileSlug,
+        artifactType: baseType.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`),
         workflowName: 'agileagentcanvas',
         projectName: state.projectName,
         timestamps: {
           created: new Date().toISOString(),
           lastModified: new Date().toISOString(),
         },
-        status: (status as string) || 'draft',
+        status: (status as string | undefined) ?? (loadedFrom ? undefined : 'draft'),
       },
       content: contentFields,
     };
@@ -125,8 +128,12 @@ export class ArtifactFileWriter {
    *      epicId = '7'      → baseUri/epics/epic-7
    */
   static epicScopedDir(baseUri: vscode.Uri, epicId: string): vscode.Uri {
-    const idSlug = String(epicId).replace(/\D/g, '') || '0';
-    return vscode.Uri.joinPath(baseUri, 'epics', `epic-${idSlug}`);
+    return vscode.Uri.joinPath(baseUri, 'epics', ArtifactFileWriter.epicDirName(epicId));
+  }
+
+  /** `EPIC-3` → `epic-3`: the folder an epic's files live in. */
+  static epicDirName(epicId: string): string {
+    return `epic-${String(epicId).replace(/\D/g, '') || '0'}`;
   }
 
   // ── saveVisionToFile ───────────────────────────────────────────────────
@@ -139,7 +146,7 @@ export class ArtifactFileWriter {
 
   async saveVisionToFile(state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
 
-      const targetUri = vscode.Uri.joinPath(baseUri, 'vision.json');
+      const targetUri = this.sourceFiles.get('vision') ?? vscode.Uri.joinPath(baseUri, 'vision.json');
 
       logDebug('Writing vision to:', targetUri.fsPath);
 
@@ -204,13 +211,7 @@ export class ArtifactFileWriter {
 
       if (outputFormat === 'json' || outputFormat === 'dual') {
 
-          await vscode.workspace.fs.writeFile(
-
-              targetUri,
-
-              Buffer.from(JSON.stringify(visionJson, null, 2), 'utf-8')
-
-          );
+          await writeJsonFile(targetUri, visionJson);
 
           logDebug('Saved vision to:', targetUri.fsPath);
 
@@ -614,7 +615,7 @@ export class ArtifactFileWriter {
 
               status: epic.status || 'draft',
 
-              file: `epics/epic-${idSlug}/epic.json`
+              file: `epics/${ArtifactFileWriter.epicDirName(epic.id)}/epic.json`
 
           });
 
@@ -1198,12 +1199,22 @@ export class ArtifactFileWriter {
 
   async saveTestDesignToFile(td: any, state: BmadArtifacts, baseUri: vscode.Uri): Promise<void> {
 
-      let targetUri: vscode.Uri;
-
       const sourceKey = `testDesign:${td.id}`;
 
+      const safeId = String(td.id ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-      if (td.epicInfo?.epicId) {
+      let targetUri: vscode.Uri;
+
+
+      const loadedFrom = this.sourceFiles.get(sourceKey);
+
+      if (loadedFrom) {
+
+          // Save back to the file it was loaded from.
+
+          targetUri = loadedFrom;
+
+      } else if (td.epicInfo?.epicId) {
 
           // Epic-scoped: epics/epic-{N}/tests/test-design.json
 
@@ -1216,8 +1227,6 @@ export class ArtifactFileWriter {
           );
 
           try { await vscode.workspace.fs.createDirectory(testsDir); } catch { /* exists */ }
-
-          const safeId = td.id.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
           targetUri = vscode.Uri.joinPath(testsDir, `test-design-${safeId}.json`);
 
@@ -1236,8 +1245,6 @@ export class ArtifactFileWriter {
           }
 
           // Generate a safe filename
-
-          const safeId = td.id.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
           const filename = safeId ? `test-design-${safeId}.json` : 'test-design.json';
 
@@ -1265,7 +1272,7 @@ export class ArtifactFileWriter {
 
               },
 
-              status: td.status || 'draft'
+              status: td.status ?? (loadedFrom ? undefined : 'draft')
 
           },
 

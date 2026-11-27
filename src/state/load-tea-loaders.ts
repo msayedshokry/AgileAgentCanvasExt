@@ -31,6 +31,7 @@ const loadTestReview: ArtifactLoadFn = (ctx) => {
     const trId = data.metadata?.id || trData.id || `test-review-${fileName}`;
     sourceFiles.set(perIdKey('testReview', trId), fileUri);
     const existing = artifacts.get('testReviews') || [];
+    if (trData && typeof trData === 'object' && !trData.id) trData.id = trId; // saving finds the file by id
     existing.push(trData);
     artifacts.set('testReviews', existing);
     logDebug(`Loaded test review ${trId} from ${fileName}`);

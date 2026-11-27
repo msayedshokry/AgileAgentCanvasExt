@@ -924,7 +924,13 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
   // across re-renders (and so future changes have one place to edit).
   // A card's Start runs it the same way as dragging it to In Progress; Stop
   // ends the agent's run (the detail panel offers Undo for a few seconds).
-  const handleStartCard = useEvent((item: KanbanItem) => handleDrop(item.id, 'in-progress'));
+  const handleStartCard = useEvent((item: KanbanItem) => moveKeepingPage(item.id, 'in-progress'));
+  /** A move from an open card page (Start, Approve) keeps you on that page; a drop clears the selection. */
+  const moveKeepingPage = useEvent((id: string, column: KanbanColumnKey) => {
+    const onPage = selectedIds.size === 1 && selectedIds.has(id);
+    handleDrop(id, column);
+    if (onPage) { setSelectedIds(new Set([id])); setAnchorId(id); }
+  });
   const handleStopCard = useEvent((item: KanbanItem) => {
     vscode.postMessage({ type: 'kanban:abandonExecution', artifactId: item.id, sessionId: item.agentState?.sessionId });
     setToast({ message: `Stopping the agent on ${item.key}`, type: 'info' });
@@ -987,7 +993,9 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
     setSelectedIds(new Set([artifactId]));
     setAnchorId(artifactId);
   };
-  const renderCardPage = (card: KanbanItem, onClose: () => void) => (
+  /** Questions a running agent asked (board_ask), shown on its page with an answer box. */
+  const questionsFor = (cardId: string) => inboxEntries.find(e => e.kind === 'question' && (e.cardId ?? e.artifactId) === cardId)?.details;
+  const renderCardPage = (card: KanbanItem, onClose: () => void, inInbox = false) => (
     <AgenticDetailPanel
       key={card.id}
       item={card}
@@ -1012,9 +1020,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
       onEditTeam={() => setAgentEditorOpen(true)}
       onStart={handleStartCard}
       onStop={handleStopCard}
-      onApprove={(item) => handleDrop(item.id, 'done')}
+      onApprove={(item) => moveKeepingPage(item.id, 'done')}
       onOpenCard={openOnBoard}
       stories={card.isEpic ? displayItems.filter(i => i.epicKey === card.id && !i.isEpic) : undefined}
+      pendingQuestions={questionsFor(card.id)}
+      answerElsewhere={inInbox}
     />
   );
 
@@ -1231,7 +1241,7 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           onApprove={(artifactId) => handleDrop(artifactId, 'done')}
           renderCard={(artifactId) => {
             const card = displayItems.find(i => i.id === artifactId);
-            return card ? renderCardPage(card, () => openOnBoard(artifactId)) : null;
+            return card ? renderCardPage(card, () => openOnBoard(artifactId), true) : null;
           }}
         />
       ) : selectedItem ? (

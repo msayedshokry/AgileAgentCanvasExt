@@ -29,6 +29,19 @@ const logDebug = (...args: unknown[]) => l1LoadLogger.debug(...args);
  * `allEpics.push(...)` → `ctx.allEpics.push(...)`.
  */
 
+/**
+ * An empty epic an older version saved after reading a board file as an epic:
+ * a timestamp id, no title of its own, no goal, no stories. Not loaded.
+ */
+function isLeftoverPlaceholderEpic(epicData: Record<string, unknown>): boolean {
+    const title = epicData.title;
+    const refs = epicData.storyRefs ?? epicData.stories;
+    return /^EPIC-\d{12,}$/.test(String(epicData.id ?? ''))
+        && (!title || title === 'Untitled Epic')
+        && !epicData.goal && !epicData.description
+        && (!Array.isArray(refs) || refs.length === 0);
+}
+
 // ─── epics (manifest + monolithic duality + reqsInventory) ────────────────
 
 const loadEpics: ArtifactLoadFn = async (ctx) => {
@@ -54,6 +67,7 @@ const loadEpics: ArtifactLoadFn = async (ctx) => {
                 const epicContent = await vscode.workspace.fs.readFile(epicFileUri);
                 const epicJson = JSON.parse(Buffer.from(epicContent).toString('utf-8'));
                 const epicData = epicJson.content || epicJson;
+                if (isLeftoverPlaceholderEpic(epicData)) continue;
                 const epic = mapSchemaEpicToInternal(epicData);
                 if (epic) {
                     await loadEpicStoryRefs(epic, epicData, epicFileUri);
@@ -73,6 +87,10 @@ const loadEpics: ArtifactLoadFn = async (ctx) => {
     } else {
         // ── Old format: monolithic file with inline epic objects ──
         for (const epicData of epicsArray) {
+            // Only something that names itself an epic becomes one; anything else
+            // would turn into a new "Untitled Epic" with a fresh id on every load.
+            if (!epicData || typeof epicData !== 'object' || (!epicData.id && !epicData.title)) continue;
+            if (isLeftoverPlaceholderEpic(epicData)) continue;
             const epic = mapSchemaEpicToInternal(epicData);
             if (epic) {
                 await loadEpicStoryRefs(epic, epicData, fileUri);
@@ -124,6 +142,7 @@ const loadEpic: ArtifactLoadFn = async (ctx) => {
         ...(data.metadata || {}),
         ...(data.content || data),
     };
+    if (isLeftoverPlaceholderEpic(epicData)) return;
     const epic = mapSchemaEpicToInternal(epicData);
     if (epic) {
         await loadEpicStoryRefs(epic, epicData, fileUri);
@@ -475,6 +494,8 @@ const loadTestDesign: ArtifactLoadFn = (ctx) => {
     const { data, fileUri, artifacts, sourceFiles, perIdKey, fileName } = ctx;
     const tdContent = data.content || data;
     const tdId = tdContent.id || `test-design-${fileName}`;
+    // Saving finds the file by this id; without it the file was deleted as an orphan.
+    if (!tdContent.id) tdContent.id = tdId;
     sourceFiles.set(perIdKey('testDesign', tdId), fileUri);
     const existingTDs = artifacts.get('testDesigns') || [];
     existingTDs.push(tdContent);

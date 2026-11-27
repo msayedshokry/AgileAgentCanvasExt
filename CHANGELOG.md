@@ -35,6 +35,11 @@ The Agentic board shows each card's work in one place and only interrupts you fo
 - A card's detail panel has one **Activity** feed: runs, agent commits and trace steps by day, newest first. Each run opens to the steps it took and the context it received; the separate Runs, Agent commits and Activity sections are gone.
 - An **Inbox** lists everything waiting on you: approvals, agents' questions, stopped runs with their fix button, proposals, stories the lead gave a person, autopilot runs, budget and circuit-breaker stops. Work it like mail: the list on the left, the selected item and its card page on the right; <kbd>J</kbd>/<kbd>K</kbd> move, <kbd>A</kbd> approves a card in review, <kbd>R</kbd> replies, <kbd>E</kbd> dismisses, <kbd>Enter</kbd> opens the card. It opens by itself when an agent is paused on an approval.
 - A sidebar on the board: Inbox with its count, then Board, **Working** (cards an agent has now), **In review** and Terminals, then each epic with its progress, which narrows the board to that epic. In a narrow tab the sidebar shows icons only.
+- The board inside the Canvas tab now gets live updates. Before, run results, progress lines, the Inbox and team changes went only to a hidden board view, so a finished or blocked run kept showing "Agent is working…".
+- The Canvas no longer offers to reload for the board's own files (terminal sessions, queues, run output); it still does for artifacts changed outside the extension.
+- Starting or approving a card from its page keeps you on the page, and a description that only repeats the user story is no longer shown twice.
+- A question an agent asks while it runs can be answered: the Inbox shows it with an answer box, and so does the card's page. Before, the question text and answer box were hidden, so a waiting agent could not be answered. A question answered during the run is not raised again from the run's verdict.
+- A card a person works shows no agent message box, Retry or Resume; it says the person works it by hand.
 - An epic's page shows how far along it is (percentage, and a bar of done, under way and not started), its stories grouped by column (open one from there), stories per agent or person, its lead, and its **Context for agents**.
 - Assign a card to a named agent from its detail panel. The card shows the assignee and runs on its CLI and model. Until you add an agent, each installed CLI acts as one.
 - Create, edit and delete agents in the **Agents** dialog on the board: a name, one of the installed CLIs, and a model. The model list comes from the CLI itself for Claude Code, Codex, OpenCode and Pi, without starting a model call; for other CLIs you type a model, and the Cursor and Copilot CLIs keep their own model setting.
@@ -104,6 +109,18 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - The agent and workflow builders produce skills that load real config, follow a shared prompt-quality guide and pass their own path checks.
 - Party mode gained an anti-consensus room and stays open until you end it. Added two elicitation methods (Subtraction, Map Is Not the Territory). Epics stay in draft until final validation passes.
 - Upgraded the Headroom compression engine from 0.22 to 0.45; every compression call the extension makes behaves the same. The built-in proxy answers a request whose message list is malformed with a clear 400 error instead of failing.
+
+### Fixed: Saving no longer rewrites your project files
+
+Saving any change used to rewrite every artifact file, and some of what was rewritten was lost.
+
+- Files keep their names and their own metadata: creation date, status, tags, author and workflow. A research file is no longer renamed with a "-default" suffix.
+- A test design without an id is no longer deleted as an orphan, and saving it no longer fails.
+- Only files whose content changed are written; the others are left untouched, `lastModified` included. Keys keep their order, and a difference in key order alone no longer counts as a change.
+- The board's own files (run verdicts, the team, run history) are no longer read as artifacts, so loading no longer adds an empty "Untitled Epic" each time. Empty ones an earlier version saved are no longer shown.
+- Checking a change against the policies no longer edits the artifact in memory, which had put file names in the wrong field of UX references and blanked epic ids on the next save.
+- A story can be approved, or otherwise changed, when it already had a schema problem the change didn't cause; a change that adds one is still blocked.
+- Agent notes, fix requests and epic context survive a reload; the epics list points at the real epic folders; saved files always have a creation time; and UX references stored as plain file names now pass the story schema.
 
 ### Fixed: Bundled paths that pointed at nothing
 

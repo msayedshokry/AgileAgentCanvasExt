@@ -10,6 +10,7 @@ import type { ArtifactStore } from '../state/artifact-store';
 import type { ArtifactChanges } from '../types';
 import { agentVerdicts, setEpicContextResolver, terminalExecutor, type AgentVerdictEvent } from '../workflow/terminal-executor';
 import { liveQuestions, registerBoardLive } from './board-live';
+import { normalizeQuestion } from '../workflow/board-live/live-questions';
 import { answerFollowUp, appendNote, planBoardEffects, type BoardEffect } from '../workflow/harness/board-effects';
 import { readAgentNotes, type AgentNote } from '../workflow/harness/agent-brief';
 import { readEpicContext, validateEpicContext, type EpicContext } from '../workflow/harness/epic-context';
@@ -84,9 +85,14 @@ async function applyEffect(deps: BoardProtocolDeps, cardId: string, effect: Boar
     case 'note':
       await addNote(deps, cardId, effect.author, effect.text);
       return;
-    case 'questions':
-      deps.notify(cardId, 'question', `${effect.author} asks ${effect.questions.length === 1 ? 'a question' : `${effect.questions.length} questions`}`, { details: effect.questions });
+    case 'questions': {
+      // A question the user already answered during the run (board_ask) is not asked again.
+      const answered = liveQuestions.takeAnswered(cardId);
+      const open = effect.questions.filter((q) => !answered.has(normalizeQuestion(q)));
+      if (open.length === 0) return;
+      deps.notify(cardId, 'question', `${effect.author} asks ${open.length === 1 ? 'a question' : `${open.length} questions`}`, { details: open });
       return;
+    }
     case 'proposals': {
       const epicId = epicOf(deps.store, cardId);
       const stories: ProposedStory[] = effect.proposals.map((p, i) => ({

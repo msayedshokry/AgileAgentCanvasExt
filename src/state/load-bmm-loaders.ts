@@ -28,6 +28,9 @@ function pushArrayArtifact(
     data: any,
 ): void {
     const existing: any[] = ctx.artifacts.get(artifactsKey) || [];
+    // Saving finds the file by this id, so an artifact without one keeps the
+    // id it was loaded under (and is not saved to a new file or deleted).
+    if (data && typeof data === 'object' && !data.id) data.id = id;
     existing.push(data);
     ctx.artifacts.set(artifactsKey, existing);
     ctx.sourceFiles.set(ctx.perIdKey(sourceKey, id), ctx.fileUri);

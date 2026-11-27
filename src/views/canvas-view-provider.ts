@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import { loadElicitationMethods, loadBmmWorkflows } from '../commands/artifact-commands';
 import { loadSampleProject } from '../commands/project-commands';
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './webview-message-handler';
+import { isBoardStateFile } from './board-state-files';
 import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
 import { buildArtifacts } from '../canvas/artifact-transformer';
 import { IdeaStore } from '../state/idea-store';
@@ -260,6 +261,7 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
     }
 
     public notifyExternalChange(filePath: string): void {
+        if (isBoardStateFile(filePath)) return; // the board's own state, not an artifact
         this._view?.webview.postMessage({
             type: 'externalArtifactsChanged',
             filePath

@@ -61,6 +61,7 @@ describe('runBoardTool', () => {
     expect(t.deps.questions.answer('S-1', '12')).toBe(true);
     expect(await call).toEqual({ ok: true, text: 'The user answered:\n12' });
     expect(t.dismissed).toEqual(['S-1']);
+    expect([...t.deps.questions.takeAnswered('S-1')]).toEqual(['8 or 12']); // so the verdict won't ask it again
   });
 
   it('tells the agent to end with BLOCKED when no answer comes in time', async () => {

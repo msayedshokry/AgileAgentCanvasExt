@@ -45,6 +45,7 @@ import {
 } from './commands/artifact-commands';
 import { handleCommonWebviewMessage, handleCatalogueWebviewMessage } from './views/webview-message-handler';
 import { initProductTourState } from './state/product-tour-state';
+import { isBoardStateFile } from './views/board-state-files';
 import { handleAgenticKanbanMessage } from './views/agentic-kanban-message-handler';
 import { createGraphifyStatusBar, refreshGraphifyStatusBar } from './views/graphify-status-bar';
 import { createCodeburnStatusBar, refreshCodeburnStatusBar } from './views/codeburn-status-bar';
@@ -178,8 +179,6 @@ export function activate(context: vscode.ExtensionContext) {
     const artifactsTreeProvider = new ArtifactsTreeProvider(artifactStore);
     const wizardStepsProvider = new WizardStepsProvider(artifactStore);
     const agenticKanbanProvider = new AgenticKanbanViewProvider(context.extensionUri, artifactStore);
-    // The Canvas panel embeds the board, so it needs the same live pushes (Inbox, progress, scheduler).
-    agenticKanbanProvider.setExtraTargets(() => openCanvasPanels.map((p) => p.webview));
     // What waits on the user (stopped runs, approvals, paused stories, autopilots):
     // a status-bar count, and the board's Inbox kept in sync.
     registerNeedsYou(
@@ -689,6 +688,8 @@ export function activate(context: vscode.ExtensionContext) {
                 logger.debug(`[FileWatcher] Suppressed self-write notification: ${filePath}`);
                 return;
             }
+            // The board's own state (sessions, queues, run output) is not an artifact change.
+            if (isBoardStateFile(filePath)) return;
             // Notify webview of external change (shows reload badge)
             openCanvasPanels.forEach(panel => {
                 panel.webview.postMessage({ type: 'externalArtifactsChanged', filePath });
@@ -732,6 +733,8 @@ export function activate(context: vscode.ExtensionContext) {
                 logger.debug(`[FileWatcher] Suppressed self-write notification: ${filePath}`);
                 return;
             }
+            // The board's own state (sessions, queues, run output) is not an artifact change.
+            if (isBoardStateFile(filePath)) return;
             openCanvasPanels.forEach(panel => {
                 panel.webview.postMessage({ type: 'externalArtifactsChanged', filePath });
             });

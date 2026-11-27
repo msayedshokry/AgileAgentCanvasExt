@@ -4,6 +4,7 @@ import { mapSchemaStoryToInternal } from './schema-mappers';
 import type { Epic, Story, TestCase, TestCaseType } from '../types';
 import { errMsg } from '../utils/error';
 import { REPOS_SUBFOLDER } from './constants';
+import { isBoardStateDir, isBoardStateFile } from '../views/board-state-files';
 
 /**
  * Folders inside the output folder that hold run state, not artifacts. Agent
@@ -68,8 +69,11 @@ export async function findAllJsonFiles(
             const entryUri = vscode.Uri.joinPath(folderUri, name);
             
             if ((type & vscode.FileType.File) !== 0 && name.endsWith('.json')) {
-                results.push(entryUri);
+                // The board's own state (team, runs, verdicts) is not an artifact:
+                // a lead's verdict file was being read as an "Untitled Epic".
+                if (!isBoardStateFile(name)) results.push(entryUri);
             } else if ((type & vscode.FileType.Directory) !== 0) {
+                if (isBoardStateDir(name)) continue;
                 // Recursively search subdirectories
                 const subResults = await findAllJsonFiles(entryUri, depth + 1, visited, maxDepth);
                 results.push(...subResults);

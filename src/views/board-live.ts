@@ -94,6 +94,7 @@ export async function runBoardTool(deps: BoardLiveDeps, scope: RunScope, tool: s
           return { ok: false, text: 'No answer yet. End your run with verdict BLOCKED and put your question in "board": {"questions": [...]}; the user\'s answer will come back to you.' };
         }
         deps.dismiss(scope.cardId);
+        deps.questions.noteAnswered(scope.cardId, questions);
         return { ok: true, text: `The user answered:\n${answer}` };
       }
       default:

@@ -310,6 +310,24 @@ describe('HarnessEngine.evaluate — evaluation results', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('HarnessEngine.evaluate — auto-fix', () => {
+  it('leaves the artifact it was given untouched when an auto-fix edits in place', async () => {
+    const engine = new HarnessEngine();
+    engine.registerPolicy(makeFailingPolicy({
+      autoFix: async (ctx) => {
+        const a = ctx.artifact as Record<string, any>;
+        a.tags.push('added');
+        a.title = 'Changed';
+        return { ok: true, data: a };
+      },
+    }));
+    const artifact = { id: 'S-1', title: 'Mine', tags: ['kept'] };
+
+    const [result] = await engine.evaluate(makeContext({ artifact }), 'pre-flight');
+
+    expect(artifact).toEqual({ id: 'S-1', title: 'Mine', tags: ['kept'] });
+    expect(result.fixedArtifact).toMatchObject({ title: 'Changed', tags: ['kept', 'added'] });
+  });
+
   it('calls autoFix when policy has failures and autoFix is defined', async () => {
     const autoFix = vi.fn(async () => ({ ok: true, data: { id: 'S-1', title: 'Fixed' } }));
     const engine = new HarnessEngine();

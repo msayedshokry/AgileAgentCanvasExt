@@ -17,9 +17,9 @@ import type { ArtifactReducerCtx, ArtifactChanges, ArtifactDeleteCtx, ArtifactLo
 import { exportArtifacts } from './artifact-exporter';
 import { mapSchemaEpicToInternal, mergeEpicDuplicate, mapSchemaStoryToInternal, mapSchemaRequirement } from './schema-mappers';
 import { generateAllArtifactsMarkdown } from './artifact-markdown-generator';
-import { writeMarkdownCompanion, normalizeLegacyArtifact } from './artifact-file-io';
+import { writeMarkdownCompanion, normalizeLegacyArtifact, writeTextIfChanged, sameContentOnDisk } from './artifact-file-io';
 import { schemaValidator } from './schema-validator';
-import { harnessEngine } from '../harness/policy-engine';
+import { harnessEngine, type EvaluationResult } from '../harness/policy-engine';
 import {
     BmadArtifacts,
     BmadMetadata,
@@ -667,6 +667,27 @@ export class ArtifactStore {
      * enforcement layer for typed shapes; the in-memory store accepts
      * arbitrary keys and treats anything schema-valid as legitimate.
      */
+    /**
+     * Blocking failures this change causes. A problem the artifact already had
+     * (say, an older file's field shape) must not stop an unrelated change
+     * such as approving it.
+     */
+    private async blockingFailuresAddedBy(
+        artifactType: string,
+        artifactId: string,
+        existing: object,
+        results: EvaluationResult[],
+    ): Promise<EvaluationResult[]> {
+        const blocking = results.filter(r => !r.passed && r.severity === 'blocking');
+        if (blocking.length === 0 || Object.keys(existing).length === 0) return blocking;
+        const before = (await harnessEngine.evaluate({ artifactType, artifactId, artifact: existing }, 'pre-flight')) ?? [];
+        const failedBefore = new Map(before.filter(r => !r.passed).map(r => [r.policyId, new Set(r.failures ?? [])]));
+        return blocking.filter((r) => {
+            const had = failedBefore.get(r.policyId);
+            return !had || (r.failures ?? []).some(f => !had.has(f));
+        });
+    }
+
     async updateArtifact(
         artifactType: string,
         artifactId: string,
@@ -694,7 +715,7 @@ export class ArtifactStore {
                 { artifactType, artifactId, artifact: candidate },
                 'pre-flight'
             );
-            const blocking = preResults.filter(r => !r.passed && r.severity === 'blocking');
+            const blocking = await this.blockingFailuresAddedBy(artifactType, artifactId, existingArtifact, preResults);
             if (blocking.length > 0) {
                 this._onHarnessFailures.fire(blocking);
                 throw new Error(`Blocked by policies: ${blocking.map(b => b.policyId).join(', ')}`);
@@ -1970,7 +1991,7 @@ export class ArtifactStore {
                     }
                 };
                 const reqSyncFormat = this.getOutputFormat();
-                if (reqSyncFormat === 'json' || reqSyncFormat === 'dual') {
+                if ((reqSyncFormat === 'json' || reqSyncFormat === 'dual') && !(await sameContentOnDisk(reqFileUri, reqContent.content))) {
                     const reqBytes = Buffer.from(JSON.stringify(reqContent, null, 2), 'utf-8');
                     await vscode.workspace.fs.writeFile(reqFileUri, reqBytes);
                 }
@@ -2040,10 +2061,7 @@ export class ArtifactStore {
                 '',
             ];
             const readmeUri = vscode.Uri.joinPath(baseUri, 'README.md');
-            await vscode.workspace.fs.writeFile(
-                readmeUri,
-                Buffer.from(readmeLines.join('\n'), 'utf-8')
-            );
+            await writeTextIfChanged(readmeUri, readmeLines.join('\n'));
         } catch (e) { errors.push(`readme: ${e}`); }
 
         logDebug('syncToFiles completed');

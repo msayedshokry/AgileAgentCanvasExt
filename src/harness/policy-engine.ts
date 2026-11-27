@@ -106,7 +106,9 @@ export class HarnessEngine extends EventEmitter {
 
       if (failures?.length && policy.autoFix) {
         try {
-          const fixResult = await policy.autoFix({ ...context, artifact: currentArtifact });
+          // A fix works on a copy: repairs edit in place, and the artifact
+          // here is often the live one in the store.
+          const fixResult = await policy.autoFix({ ...context, artifact: structuredClone(currentArtifact) });
           if (fixResult.ok && fixResult.data) {
             fixed = true;
             fixedArtifact = fixResult.data;

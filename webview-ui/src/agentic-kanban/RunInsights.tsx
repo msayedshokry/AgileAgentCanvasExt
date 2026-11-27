@@ -73,7 +73,7 @@ function duration(ms: number): string {
 }
 
 /** The agent stopped to ask the user: answer right here (same as from the Inbox). */
-function AnswerQuestions({ artifactId }: { artifactId: string }) {
+export function AnswerQuestions({ artifactId }: { artifactId: string }) {
   const [answer, setAnswer] = useState('');
   const send = () => {
     if (!answer.trim()) return;
@@ -96,13 +96,13 @@ function AnswerQuestions({ artifactId }: { artifactId: string }) {
   );
 }
 
-export function FixItPanel({ artifactId, failure }: { artifactId: string; failure: AgentFailureInfo }) {
+export function FixItPanel({ artifactId, failure, hideAnswer = false }: { artifactId: string; failure: AgentFailureInfo; hideAnswer?: boolean }) {
   const act = (action: AgentFixAction) => vscode.postMessage({ type: 'kanban:fixAction', artifactId, action });
   return (
     <section className="agent-fixit" role="alert" aria-label="Why the agent stopped">
       <p className="agent-fixit-title">{failure.title}</p>
       {failure.detail && <pre className="agent-fixit-detail">{failure.detail}</pre>}
-      {failure.kind === 'needs-answer' && <AnswerQuestions artifactId={artifactId} />}
+      {failure.kind === 'needs-answer' && !hideAnswer && <AnswerQuestions artifactId={artifactId} />}
       <div className="agent-fixit-actions">
         {failure.actions.map((action, idx) => (
           <button
@@ -248,11 +248,15 @@ interface RunInsightsProps {
   item: KanbanItem;
   /** Recent trace steps for this card; each nests under the run it happened in. */
   trace?: readonly TraceStep[];
+  /** The answer box is shown elsewhere (the Inbox); don't repeat it. */
+  hideAnswer?: boolean;
+  /** No agent works this card (a person has it): leave out the fix-it actions. */
+  hideFix?: boolean;
 }
 
 const NO_TRACE: readonly TraceStep[] = [];
 
-export function RunInsights({ item, trace = NO_TRACE }: RunInsightsProps) {
+export function RunInsights({ item, trace = NO_TRACE, hideAnswer = false, hideFix = false }: RunInsightsProps) {
   const [runs, setRuns] = useState<TimelineRun[] | null>(null);
   const [commits, setCommits] = useState<AgentCommit[]>([]);
   const [pr, setPr] = useState<CardPullRequest | undefined>();
@@ -285,7 +289,7 @@ export function RunInsights({ item, trace = NO_TRACE }: RunInsightsProps) {
 
   return (
     <div className="agent-insights">
-      {failure && <FixItPanel artifactId={item.id} failure={failure} />}
+      {failure && !hideFix && <FixItPanel artifactId={item.id} failure={failure} hideAnswer={hideAnswer} />}
 
       <div className="agent-insights-tools">
         <button
