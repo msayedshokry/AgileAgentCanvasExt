@@ -20,6 +20,7 @@ import { acpSessionManager, type AcpSession } from '../acp/session-manager';
 import { agentHealthMonitor } from '../workflow/agent-health-monitor';
 import { kanbanProgress } from '../workflow/kanban-orchestrator';
 import { terminalExecutor } from '../workflow/terminal-executor';
+import { webviewAssetUri } from './webview-asset-uri';
 
 const logger = createLogger('agent-sessions-view-provider');
 
@@ -397,12 +398,8 @@ export class AgentSessionsViewProvider implements vscode.WebviewViewProvider, vs
 
   private getHtmlContent(webview: vscode.Webview): string {
     const buildPath = vscode.Uri.joinPath(this.extensionUri, 'webview-ui', 'build');
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
-    );
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
-    );
+    const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.js'));
+    const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.css'));
 
     return `<!DOCTYPE html>
 <html lang="en">

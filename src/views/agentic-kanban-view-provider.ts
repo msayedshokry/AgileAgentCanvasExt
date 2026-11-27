@@ -13,6 +13,7 @@ import { harnessEngine, type HarnessEvaluatedEvent } from '../harness/policy-eng
 import { HarnessCardResults } from './harness-card-results';
 
 import { errMsg } from '../utils/error';
+import { webviewAssetUri } from './webview-asset-uri';
 
 /**
  * Webview provider for the Agentic Kanban — execution orchestration surface.
@@ -240,12 +241,8 @@ export class AgenticKanbanViewProvider implements vscode.WebviewViewProvider {
 
   private getHtmlContent(webview: vscode.Webview): string {
     const buildPath = vscode.Uri.joinPath(this.extensionUri, 'webview-ui', 'build');
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
-    );
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
-    );
+    const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.js'));
+    const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.css'));
 
     return `<!DOCTYPE html>
 <html lang="en">

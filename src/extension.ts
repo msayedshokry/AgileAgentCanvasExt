@@ -83,6 +83,7 @@ import { initialiseSkillRepoManager } from './state/skill-repo-manager';
 import { USER_CATALOGUE_SETTING } from './state/constants';
 import { IdeaStore } from './state/idea-store';
 import { errMsg } from './utils/error';
+import { webviewAssetUri } from './views/webview-asset-uri';
 
 const logger = createLogger('extension');
 
@@ -1129,12 +1130,8 @@ async function openVisualPlanPanel(context: vscode.ExtensionContext, store: Arti
 
 function getVisualPlanHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
     const buildPath = vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build');
-    const scriptUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
-    );
-    const styleUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
-    );
+    const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.js'));
+    const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.css'));
 
     const csp = `default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} data:;`;
 
@@ -1246,12 +1243,8 @@ function openDetailTab(artifactId: string, context: vscode.ExtensionContext, sto
 
 function getDetailTabHtml(webview: vscode.Webview, extensionUri: vscode.Uri, artifactId: string): string {
     const buildPath = vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build');
-    const scriptUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
-    );
-    const styleUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
-    );
+    const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.js'));
+    const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.css'));
 
     // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
     const forceGraphUri = webview.asWebviewUri(
@@ -1291,12 +1284,8 @@ async function reloadArtifactsFromDisk(store: ArtifactStore): Promise<void> {
 }
 
 function getCanvasWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-    const scriptUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', 'assets', 'index.js')
-    );
-    const styleUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', 'assets', 'index.css')
-    );
+    const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', 'assets', 'index.js'));
+    const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(extensionUri, 'webview-ui', 'build', 'assets', 'index.css'));
 
     // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
     const forceGraphUri = webview.asWebviewUri(

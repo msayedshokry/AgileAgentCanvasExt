@@ -12,6 +12,7 @@ import { isBoardStateFile } from './board-state-files';
 import { handleAgenticKanbanMessage } from './agentic-kanban-message-handler';
 import { buildArtifacts } from '../canvas/artifact-transformer';
 import { IdeaStore } from '../state/idea-store';
+import { webviewAssetUri } from './webview-asset-uri';
 
 /**
  * Webview provider for the AgileAgentCanvas - Full panel view
@@ -565,12 +566,8 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             return this.getFallbackHtml(webview);
         }
 
-        const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
-        );
-        const styleUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
-        );
+        const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.js'));
+        const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.css'));
 
         // Webview URI for the 3d-force-graph UMD bundle (loaded on-demand by Corpus3DView)
         const forceGraphUri = webview.asWebviewUri(
@@ -618,12 +615,8 @@ export class AgileAgentCanvasViewProvider implements vscode.WebviewViewProvider 
             logger.debug('[CanvasProvider] Build found, loading React app');
             
             // Get URIs for assets
-            const scriptUri = webview.asWebviewUri(
-                vscode.Uri.joinPath(buildPath, 'assets', 'index.js')
-            );
-            const styleUri = webview.asWebviewUri(
-                vscode.Uri.joinPath(buildPath, 'assets', 'index.css')
-            );
+            const scriptUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.js'));
+            const styleUri = webviewAssetUri(webview, vscode.Uri.joinPath(buildPath, 'assets', 'index.css'));
             
             logger.debug(`[CanvasProvider] Script URI: ${scriptUri.toString()}`);
             logger.debug(`[CanvasProvider] Style URI: ${styleUri.toString()}`);
