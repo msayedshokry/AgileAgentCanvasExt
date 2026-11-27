@@ -13,7 +13,7 @@
 //   - 'file'    the CLI takes the prompt file path as a flag value
 
 import type { LaunchSpec } from './shell-command';
-import { IN_PROCESS_NODE_TESTS } from './node-test-isolation';
+import { IN_PROCESS_NODE_TESTS } from './windows-sandbox';
 
 export type HarnessId =
   | 'claude'
@@ -57,7 +57,7 @@ export interface LaunchContext {
    */
   readonly board?: BoardMcpLaunch;
   /**
-   * Run `node --test` in-process inside the sandbox (see node-test-isolation.ts).
+   * Run `node --test` in-process inside the sandbox (see windows-sandbox.ts).
    * The caller decides; adapters whose sandbox blocks child processes honour it.
    */
   readonly inProcessNodeTests?: boolean;

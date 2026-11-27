@@ -61,6 +61,8 @@ export class NodePtyTerminalBackend implements TerminalBackend {
     shell?: string,
     args?: string[],
     cwd?: string,
+    /** Variables to set on top of the extension host's environment. */
+    env?: Readonly<Record<string, string>>,
   ): void {
     if (!this.ptyModule) return;
     if (this.sessions.has(sessionId)) return; // idempotent
@@ -76,7 +78,7 @@ export class NodePtyTerminalBackend implements TerminalBackend {
         cols: 120,
         rows: 30,
         cwd: cwd ?? process.cwd(),
-        env: process.env as Record<string, string>,
+        env: { ...process.env, ...env } as Record<string, string>,
       });
 
       const session: PtySession = { pty: p, accumulatedData: '', listeners };

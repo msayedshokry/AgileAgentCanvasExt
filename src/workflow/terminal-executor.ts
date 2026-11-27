@@ -103,7 +103,7 @@ import { budgetEnforcer } from './budget-enforcer';
 import { costTracker } from '../chat/cost-tracker';
 import { readCliUsage } from './harness/cli-usage';
 import { ensureProjectContext, readProjectContext } from './harness/project-context';
-import { shouldRunNodeTestsInProcess, userNodeVersion } from './harness/node-test-isolation';
+import { pathWithoutWindowsApps, shouldRunNodeTestsInProcess, userNodeVersion } from './harness/windows-sandbox';
 
 /** Create project-context.md on first use and return its text (never throws). */
 function loadProjectContext(outputFolder: string): string | undefined {
@@ -671,6 +671,10 @@ export class TerminalExecutor implements vscode.Disposable {
     const posture = await resolveEffectivePosture();
     // Only probed when it can matter (sandboxed on Windows); cached after the first run.
     const nodeVersion = process.platform === 'win32' && posture === 'sandboxed' ? await userNodeVersion() : undefined;
+    // Codex's Windows sandbox cannot launch Store app aliases (e.g. its pick of shell, pwsh.exe).
+    const terminalEnv = adapter.id === 'codex' && process.platform === 'win32' && posture === 'sandboxed'
+      ? pathWithoutWindowsApps(process.env)
+      : undefined;
     const provider: HarnessId = adapter.id;
     const agentRole = inferRoleFromWorkflow(workflowId);
     const sessionId = `term-${workflowId}-${artifactId}-${Date.now()}`;
@@ -759,7 +763,7 @@ export class TerminalExecutor implements vscode.Disposable {
 
       // Spawn the pty shell process keyed by artifactId so onSessionExit
       // can look up the session directly.
-      ptyBackend.spawnSession(artifactId);
+      ptyBackend.spawnSession(artifactId, undefined, undefined, undefined, terminalEnv);
 
       // Attach a stream listener for output accumulation + webview streaming
       const ptyDisposable = ptyBackend.attach(artifactId, (chunk: string) => {
@@ -835,6 +839,7 @@ export class TerminalExecutor implements vscode.Disposable {
       message: `${agentRole} executing ${workflowId} on ${artifactId}`,
       location: vscode.TerminalLocation.Panel,
       ...(options?.cwd ? { cwd: options.cwd } : {}),
+      ...(terminalEnv ? { env: terminalEnv } : {}),
     };
 
     const terminal = vscode.window.createTerminal(termOptions);
