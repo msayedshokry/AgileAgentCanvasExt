@@ -13,6 +13,7 @@
 //   - 'file'    the CLI takes the prompt file path as a flag value
 
 import type { LaunchSpec } from './shell-command';
+import { IN_PROCESS_NODE_TESTS } from './node-test-isolation';
 
 export type HarnessId =
   | 'claude'
@@ -55,6 +56,11 @@ export interface LaunchContext {
    * shim command and, for Claude Code, a ready MCP config file.
    */
   readonly board?: BoardMcpLaunch;
+  /**
+   * Run `node --test` in-process inside the sandbox (see node-test-isolation.ts).
+   * The caller decides; adapters whose sandbox blocks child processes honour it.
+   */
+  readonly inProcessNodeTests?: boolean;
 }
 
 export interface BoardMcpLaunch {
@@ -173,12 +179,16 @@ const codex: HarnessAdapter = {
   // `-c mcp_servers.<name>.*` registers the board server for this run without
   // touching ~/.codex/config.toml (checked with `codex mcp list`, 0.163).
   boardTools: true,
-  buildLaunch: ({ binary, posture, model, board }) => {
+  // shell_environment_policy.set.NODE_OPTIONS: the Windows sandbox blocks the
+  // child processes `node --test` starts; the value is not valid TOML, so codex
+  // takes it as a literal string and it stays a SAFE_ARG.
+  buildLaunch: ({ binary, posture, model, board, inProcessNodeTests }) => {
     const m = [...(model ? ['-m', model] : []), ...codexBoardOverrides(board)];
+    const nodeTests = inProcessNodeTests ? ['-c', `shell_environment_policy.set.NODE_OPTIONS=${IN_PROCESS_NODE_TESTS}`] : [];
     return {
       args: posture === 'full'
         ? [binary, 'exec', ...m, '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '-']
-        : [binary, 'exec', ...m, '--sandbox', 'workspace-write', '-c', 'windows.sandbox=unelevated', '--skip-git-repo-check', '-'],
+        : [binary, 'exec', ...m, '--sandbox', 'workspace-write', '-c', 'windows.sandbox=unelevated', ...nodeTests, '--skip-git-repo-check', '-'],
     };
   },
 };

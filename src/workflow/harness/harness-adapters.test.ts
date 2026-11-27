@@ -91,6 +91,17 @@ describe('per-harness flags (verified against CLI help/docs 2026-11-19)', () => 
     expect(launch('codex', 'full').args).toContain('--dangerously-bypass-approvals-and-sandbox');
   });
 
+  it('codex runs node tests in-process inside the sandbox only when asked', () => {
+    const adapter = getHarnessAdapter('codex')!;
+    const override = 'shell_environment_policy.set.NODE_OPTIONS=--test-isolation=none';
+    const asked = buildHarnessLaunch(adapter, { ...ctx('sandboxed', 'codex'), inProcessNodeTests: true }).args;
+    expect(asked[asked.indexOf(override) - 1]).toBe('-c');
+    expect(asked.at(-1)).toBe('-');
+    expect(launch('codex', 'sandboxed').args).not.toContain(override);
+    // Full posture has no sandbox, so nothing to work around.
+    expect(buildHarnessLaunch(adapter, { ...ctx('full', 'codex'), inProcessNodeTests: true }).args).not.toContain(override);
+  });
+
   it('gemini uses --approval-mode and -p', () => {
     expect(launch('gemini', 'sandboxed').args.slice(0, 4)).toEqual(['gemini', '--approval-mode', 'auto_edit', '-p']);
     expect(launch('gemini', 'full').args[2]).toBe('yolo');

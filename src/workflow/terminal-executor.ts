@@ -103,6 +103,7 @@ import { budgetEnforcer } from './budget-enforcer';
 import { costTracker } from '../chat/cost-tracker';
 import { readCliUsage } from './harness/cli-usage';
 import { ensureProjectContext, readProjectContext } from './harness/project-context';
+import { shouldRunNodeTestsInProcess, userNodeVersion } from './harness/node-test-isolation';
 
 /** Create project-context.md on first use and return its text (never throws). */
 function loadProjectContext(outputFolder: string): string | undefined {
@@ -668,6 +669,8 @@ export class TerminalExecutor implements vscode.Disposable {
 
     const { adapter, binary } = resolution;
     const posture = await resolveEffectivePosture();
+    // Only probed when it can matter (sandboxed on Windows); cached after the first run.
+    const nodeVersion = process.platform === 'win32' && posture === 'sandboxed' ? await userNodeVersion() : undefined;
     const provider: HarnessId = adapter.id;
     const agentRole = inferRoleFromWorkflow(workflowId);
     const sessionId = `term-${workflowId}-${artifactId}-${Date.now()}`;
@@ -715,7 +718,8 @@ export class TerminalExecutor implements vscode.Disposable {
       const session = sessionPlan ? { id: sessionPlan.sessionId, resume: sessionPlan.resume } : undefined;
       // The assignee's model applies only when its CLI is the one running this step.
       const model = assignee?.harness === adapter.id ? assignee.model : undefined;
-      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session, model, ...(board ? { board } : {}) });
+      const inProcessNodeTests = shouldRunNodeTestsInProcess(process.platform, posture, nodeVersion);
+      const spec = buildHarnessLaunch(adapter, { binary, promptFile, resultPath, posture, workspaceDir, session, model, inProcessNodeTests, ...(board ? { board } : {}) });
       cmdLine = buildCommandLine(spec, shellKind);
     } catch (err) {
       disposeStagedPrompt(promptFile);
