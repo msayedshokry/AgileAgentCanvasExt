@@ -1156,6 +1156,11 @@ export async function handleAgenticKanbanMessage(
       return true;
     }
 
+    // "Open in Editor" from any canvas: the plan's own tab, showing that plan.
+    case 'openVisualPlan':
+      await vscode.commands.executeCommand('agileagentcanvas.openVisualPlan', typeof message.artifactId === 'string' ? message.artifactId : undefined);
+      return true;
+
     case 'visualPlan:delete': {
       const plan = visualPlanService.get(message.planId);
       if (!plan) return true;

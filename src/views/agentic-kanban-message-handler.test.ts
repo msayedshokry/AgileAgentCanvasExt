@@ -565,3 +565,12 @@ describe('handleAgenticKanbanMessage — retry and delete a plan', () => {
     expect(visualPlanStore.delete).toHaveBeenCalledWith('plan-old');
   });
 });
+
+describe('handleAgenticKanbanMessage — Open in Editor', () => {
+  it('opens the plan tab on the plan that was clicked, from any canvas', async () => {
+    vi.clearAllMocks();
+    const handled = await handleAgenticKanbanMessage({ type: 'openVisualPlan', artifactId: 'plan-7' }, {} as ArtifactStore, {} as vscode.Uri);
+    expect(handled).toBe(true);
+    expect(vscode.commands.executeCommand).toHaveBeenCalledWith('agileagentcanvas.openVisualPlan', 'plan-7');
+  });
+});

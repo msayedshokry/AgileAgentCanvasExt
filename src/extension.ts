@@ -491,8 +491,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('agileagentcanvas.generateVisualPlan', () => {
             return openChat('@agileagentcanvas /visual-plan');
         }),
-        vscode.commands.registerCommand('agileagentcanvas.openVisualPlan', () => {
-            return openVisualPlanPanel(context, artifactStore);
+        vscode.commands.registerCommand('agileagentcanvas.openVisualPlan', (planId?: string) => {
+            return openVisualPlanPanel(context, artifactStore, typeof planId === 'string' ? planId : undefined);
         }),
         // Ask Agent — open the Ask modal on the canvas (triggered by Ctrl+Shift+A)
         vscode.commands.registerCommand('agileagentcanvas.askAgent', () => {
@@ -1049,9 +1049,6 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
                         openDetailTab(message.artifactId, context, store);
                     }
                     break;
-                case 'openVisualPlan':
-                    openVisualPlanPanel(context, store);
-                    break;
                 case 'switchProject':
                     {
                         const switched = await workspaceResolver.promptSwitchProject();
@@ -1085,7 +1082,8 @@ async function openCanvasPanel(context: vscode.ExtensionContext, store: Artifact
     }, null, context.subscriptions);
 }
 
-async function openVisualPlanPanel(context: vscode.ExtensionContext, store: ArtifactStore): Promise<void> {
+/** The plan's own tab: `planId` (or the first plan) and, live, every change to it. */
+async function openVisualPlanPanel(context: vscode.ExtensionContext, store: ArtifactStore, planId?: string): Promise<void> {
     const panel = vscode.window.createWebviewPanel(
         'agileagentcanvasVisualPlan',
         'Visual Plan',
@@ -1107,11 +1105,17 @@ async function openVisualPlanPanel(context: vscode.ExtensionContext, store: Arti
         if (await handleCommonWebviewMessage(message, store, context.extensionUri, '[VisualPlanPanel]', panel.webview)) return;
     }, undefined, context.subscriptions);
 
-    // Send existing plans immediately so the pop-out isn't stuck in loading state
-    const existingPlans = visualPlanService.list();
-    if (existingPlans.length > 0) {
-        panel.webview.postMessage({ type: 'visualPlan:list:result', plans: existingPlans });
-    }
+    // The plan asked for, first; the list only when none was named or it is gone.
+    const focused = planId ? visualPlanService.get(planId) : undefined;
+    panel.webview.postMessage(focused
+        ? { type: 'visualPlan:ready', plan: focused }
+        : { type: 'visualPlan:list:result', plans: visualPlanService.list() });
+
+    // Plans an agent writes, settles or retries reach the tab without reopening it.
+    const planChanges = visualPlanStore.onDidChange((plans) => {
+        try { panel.webview.postMessage({ type: 'visualPlan:changed', plans }); } catch { /* disposed */ }
+    });
+    panel.onDidDispose(() => planChanges.dispose(), null, context.subscriptions);
 
     // Subscribe to plan events so the pop-out stays in sync with new plans
     const onReady = (plan: any) => {

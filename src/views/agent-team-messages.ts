@@ -8,7 +8,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { HARNESS_ADAPTERS, getHarnessAdapter } from '../workflow/harness/harness-adapters';
-import { isOnPathCached } from '../workflow/harness/board-harness';
+import { isOnPathCached, resolveBoardHarness } from '../workflow/harness/board-harness';
+import { askCli } from '../workflow/harness/cli-ask';
 import {
   AGENT_TEAM_FILE, AGENT_TEAM_TEMPLATE, agentIdFor, effectiveRoster, readAgentTeam, validateAgent, withAgent, withAssignment,
   withoutAgent, writeAgentTeam, materializeRoster,
@@ -142,16 +143,39 @@ function saveAgent(raw: unknown, post: Post): void {
   postTeam(post);
 }
 
-/** Draft an agent from a one-line description with the configured AI model ("Build with AI"). */
+const NO_MODEL = "No agent or AI model is available. Pick an installed agent in the board's agent chip, sign in to GitHub Copilot, or set an AI provider in the extension settings.";
+
+type Answer = { ok: true; text: string; via: string } | { ok: false; error: string };
+
+/** VS Code's language model (Copilot or the configured API provider). */
+async function askLanguageModel(prompt: string): Promise<Answer> {
+  const model = await selectModel();
+  if (!model) return { ok: false, error: NO_MODEL };
+  const cancel = new vscode.CancellationTokenSource();
+  try {
+    const { stream } = createHeadlessStream();
+    const raw = await streamChatResponse(model, [{ role: 'user', content: prompt }], stream, cancel.token);
+    return { ok: true, text: String(raw ?? ''), via: 'your AI model' };
+  } catch (err) {
+    return { ok: false, error: `The model could not draft the agent: ${errMsg(err)}` };
+  } finally {
+    cancel.dispose();
+  }
+}
+
+/** Ask the agent the board runs (its agent chip); VS Code's model when that is the choice or nothing else is installed. */
+async function askBoardAgent(prompt: string): Promise<Answer> {
+  const resolved = await resolveBoardHarness();
+  if (resolved.kind !== 'cli') return askLanguageModel(prompt);
+  const answer = await askCli({ adapter: resolved.adapter, binary: resolved.binary, prompt });
+  return answer.ok ? { ...answer, via: resolved.adapter.label } : answer;
+}
+
+/** Draft an agent from a one-line description with the board's agent ("Build with AI"). */
 async function draftAgent(message: Record<string, unknown>, post: Post): Promise<void> {
   const request = typeof message.request === 'string' ? message.request.trim().slice(0, 2000) : '';
   if (!request) {
     post({ type: 'kanban:agentDraft', error: 'Say what the agent should do first.' });
-    return;
-  }
-  const model = await selectModel();
-  if (!model) {
-    post({ type: 'kanban:agentDraft', error: 'No AI model is available. Sign in to GitHub Copilot, or set an AI provider in the extension settings.' });
     return;
   }
   const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -160,17 +184,13 @@ async function draftAgent(message: Record<string, unknown>, post: Post): Promise
   const { team } = readAgentTeam(getOutputFolder());
   const current = (message.draft && typeof message.draft === 'object' ? message.draft : {}) as AgentDraft;
   const prompt = agentBuilderPrompt({ request, draft: current, team: team.agents.map((a) => ({ name: a.name, role: a.role })), skills, clis });
-  const cancel = new vscode.CancellationTokenSource();
-  try {
-    const { stream } = createHeadlessStream();
-    const raw = await streamChatResponse(model, [{ role: 'user', content: prompt }], stream, cancel.token);
-    const result = parseAgentDraft(String(raw ?? ''), { skills, clis });
-    post(result.ok ? { type: 'kanban:agentDraft', draft: result.draft } : { type: 'kanban:agentDraft', error: result.error });
-  } catch (err) {
-    post({ type: 'kanban:agentDraft', error: `The model could not draft the agent: ${errMsg(err)}` });
-  } finally {
-    cancel.dispose();
+  const answer = await askBoardAgent(prompt);
+  if (!answer.ok) {
+    post({ type: 'kanban:agentDraft', error: answer.error });
+    return;
   }
+  const result = parseAgentDraft(answer.text, { skills, clis });
+  post(result.ok ? { type: 'kanban:agentDraft', draft: result.draft, via: answer.via } : { type: 'kanban:agentDraft', error: result.error });
 }
 
 /** The brief a draft agent would get on its next run, built by the same code a run uses. */

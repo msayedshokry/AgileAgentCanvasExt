@@ -31,6 +31,14 @@ export function VisualPlanApp() {
       case 'visualPlan:error':
         setLoading(false);
         break;
+      // A plan the tab started (Retry) or is showing changed on disk.
+      case 'visualPlan:generating':
+        setPlan({ id: message.planId, title: message.goal, goal: message.goal, status: 'generating', createdAt: Date.now(), updatedAt: Date.now(), sections: [], comments: [] });
+        setLoading(false);
+        break;
+      case 'visualPlan:changed':
+        setPlan((p) => (p ? (message.plans as VisualPlan[]).find((x) => x.id === p.id) ?? p : p));
+        break;
       case 'visualPlan:deleted':
         setPlan((p) => (p?.id === message.planId ? null : p));
         break;

@@ -178,7 +178,8 @@ function BuildWithAi({ form, onDraft }: { form: Draft; onDraft: (draft: AiDraft)
       if (msg.error) { setNote({ error: true, text: String(msg.error) }); return; }
       if (msg.draft && typeof msg.draft === 'object') {
         onDraft(msg.draft as AiDraft);
-        setNote({ error: false, text: 'Drafted. Read every field before you save; ask again to change it.' });
+        const by = typeof msg.via === 'string' && msg.via ? ` by ${msg.via}` : '';
+        setNote({ error: false, text: `Drafted${by}. Read every field before you save; ask again to change it.` });
       }
     };
     window.addEventListener('message', onMessage);
@@ -207,7 +208,7 @@ function BuildWithAi({ form, onDraft }: { form: Draft; onDraft: (draft: AiDraft)
       />
       <div className="agent-builder-row">
         <span className={`agent-builder-note${note?.error ? ' is-error' : ''}`} role="status">
-          {busy ? 'Drafting with your AI model…' : note?.text ?? 'Fills in name, role, instructions, skills and CLI. Nothing is saved until you press Add agent.'}
+          {busy ? "Drafting with the board's agent… a CLI agent can take a minute." : note?.text ?? 'Fills in name, role, instructions, skills and CLI. Nothing is saved until you press Add agent.'}
         </span>
         <button type="button" className="agent-editor-btn" onClick={ask} disabled={!request.trim() || busy}>
           {busy ? 'Drafting…' : form.instructions || form.role ? 'Redraft with AI' : 'Draft with AI'}

@@ -135,6 +135,8 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - A choice that cannot work here says why: Pull request without the GitHub CLI, or Own branch in a folder that is not a git repository (agents then work in your files). A choice already set that cannot work gets a warning mark.
 - **Use as my default for new projects** saves where cards run, what approving does and the agent as your user defaults. Permissions stay per project.
 - A visual plan whose agent never wrote it no longer spins as "generating" forever: after 30 minutes with nothing written its card shows **Failed**, without a reload, and opening it offers **Retry** (same goal, the agent you have selected) or **Delete**. Every plan has Delete, on the canvas, in its own tab and on the board; you confirm before the file is removed. A deleted plan stays deleted even if its agent writes the file later.
+- **Open in Editor** on a plan opens that plan in its own tab (it showed the first plan, and did nothing from the sidebar canvas). The tab fills in when the agent writes the plan and follows a Retry to the new one.
+- **Build with AI** drafts with the agent the board runs (its agent chip), such as Claude Code or Codex, in a sandboxed temporary folder; it uses VS Code's model when that is the board's choice or no agent is installed. The note says which one drafted.
 - The board toolbar (New goal, Agents, ⋯) uses the same chips; New goal keeps a blue + icon as the main action.
 - The Plan | Agents switch is larger, and the selected section is tinted in its colour, so it is hard to miss.
 - The agent board has more room: wider columns, more space between and inside cards, larger titles and a roomier sidebar.

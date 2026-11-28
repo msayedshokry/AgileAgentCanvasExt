@@ -8,6 +8,8 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import { agentBuilderPrompt, parseAgentDraft } from '../../workflow/harness/agent-builder';
 import { listSkills } from '../../workflow/harness/skill-catalog';
+import { askCli } from '../../workflow/harness/cli-ask';
+import { getHarnessAdapter } from '../../workflow/harness/harness-adapters';
 
 const LIVE = process.env.AAC_LIVE_MODEL === '1';
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
@@ -60,4 +62,24 @@ describe.skipIf(!LIVE)('Build with AI (live model)', () => {
     expect(result.draft.instructions ?? '').toMatch(/contrast/i);
     expect(result.draft.instructions ?? '').toMatch(/(never|do not|don't) edit/i);
   }, 180_000);
+});
+
+// The path the extension takes when the board's agent is a CLI: askCli with the
+// real adapter's sandboxed launch, the answer written to a file.
+describe.skipIf(!LIVE)('Build with AI through the board agent (live CLI)', () => {
+  const skills = listSkills(repoRoot, path.join(repoRoot, 'resources', '_aac', 'skills')).map(({ id, name, description }) => ({ id, name, description }));
+  const clis = [{ id: 'claude', label: 'Claude Code' }];
+  const harness = process.env.AAC_LIVE_HARNESS ?? 'claude';
+
+  it(`drafts an agent with ${harness}`, async () => {
+    const adapter = getHarnessAdapter(harness);
+    if (!adapter) throw new Error(`unknown harness ${harness}`);
+    const prompt = agentBuilderPrompt({ request: 'Writes release notes from merged pull requests; never pushes', draft: {}, team: [], skills, clis });
+    const answer = await askCli({ adapter, binary: adapter.binaries[0], prompt });
+    expect(answer.ok, answer.ok ? '' : answer.error).toBe(true);
+    if (!answer.ok) return;
+    const result = parseAgentDraft(answer.text, { skills, clis });
+    expect(result.ok, answer.text.slice(0, 500)).toBe(true);
+    if (result.ok) console.info('[live cli draft]', JSON.stringify(result.draft, null, 2));
+  }, 300_000);
 });
