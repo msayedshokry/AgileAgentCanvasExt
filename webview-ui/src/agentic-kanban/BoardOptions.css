@@ -1,0 +1,115 @@
+/* ─── Board options row ──────────────────────────────────────────────────────
+ * One tray of chips, like Copilot's session options: icon + value, no box at
+ * rest, a soft fill on hover, a firmer one while its menu is open. */
+
+.board-options-row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-5) 0;
+}
+
+.board-options {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  background: color-mix(in srgb, var(--ink) 4%, var(--paper));
+  border: var(--rule-width) solid var(--rule);
+  border-radius: 10px;
+}
+
+.board-options .popover-trigger,
+.board-options .agent-chip--loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--ink-2);
+  border: var(--rule-width) solid transparent;
+  border-radius: 7px;
+  box-shadow: none;
+  font: var(--weight-strong) 12.5px / 1 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.board-options .agent-chip--loading { cursor: default; color: var(--ink-3); }
+.board-options .popover-trigger svg { color: var(--ink-3); flex: none; }
+.board-options .popover-trigger:hover {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  border-color: transparent;
+  color: var(--ink);
+}
+.board-options .popover-trigger--open,
+.board-options .popover-trigger--open:hover {
+  background: var(--surface-card, var(--paper));
+  border-color: transparent;
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--card-edge, var(--rule)), 0 1px 2px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.board-options .popover-trigger:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder, var(--accent));
+  outline-offset: 1px;
+}
+/* The agent chip keeps its readiness dot; a problem shows as a tinted chip. */
+.board-options .agent-chip--warn { background: color-mix(in srgb, var(--vscode-editorWarning-foreground, #cca700) 14%, transparent); }
+.board-options .agent-chip--error { background: color-mix(in srgb, var(--vscode-errorForeground, #e51400) 14%, transparent); color: var(--ink); }
+
+.board-option-branch {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Menus ── */
+.board-option-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: calc(-1 * var(--space-2));
+  width: 300px;
+  max-width: calc(100vw - 32px);
+}
+.board-option-menu-title {
+  padding: 6px 10px 4px;
+  font: var(--weight-strong) var(--text-kicker, 11px) / 1 var(--font-mono);
+  letter-spacing: var(--tracking-kicker, 0.06em);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.board-option-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--ink);
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.board-option-choice:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.board-option-choice:focus-visible { outline: 2px solid var(--vscode-focusBorder, var(--accent)); outline-offset: -2px; }
+.board-option-check {
+  width: 14px;
+  flex: none;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 18px;
+}
+.board-option-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.board-option-label { font-size: 13px; font-weight: var(--weight-strong); line-height: 18px; }
+.board-option-hint { font-size: 12px; line-height: 1.4; color: var(--ink-2); }
+.board-option-note { margin: 0; padding: 2px 10px 8px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+
+@media (forced-colors: active) {
+  .board-options .popover-trigger--open { outline: 2px solid CanvasText; }
+}

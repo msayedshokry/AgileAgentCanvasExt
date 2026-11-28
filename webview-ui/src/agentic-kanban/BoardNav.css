@@ -1,18 +1,18 @@
 /* Board sidebar: quiet list navigation. Active item = soft fill + ink, not a stripe. */
 .board-nav {
-  width: 208px;
+  width: 232px;
   flex-shrink: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-4) var(--space-3);
   border-right: var(--rule-width) solid var(--rule);
   background: color-mix(in srgb, var(--ink) 2.5%, var(--paper));
   box-sizing: border-box;
 }
-.board-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.board-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .board-nav-heading {
-  margin: var(--space-4) 0 var(--space-1);
-  padding: 0 8px;
+  margin: var(--space-5) 0 var(--space-2);
+  padding: 0 10px;
   font-size: 11px;
   font-weight: var(--weight-strong);
   color: var(--ink-3);
@@ -22,14 +22,14 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 28px;
-  padding: 0 8px;
+  height: 32px;
+  padding: 0 10px;
   border: none;
   border-radius: var(--radius);
   background: transparent;
   color: var(--ink-2);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }

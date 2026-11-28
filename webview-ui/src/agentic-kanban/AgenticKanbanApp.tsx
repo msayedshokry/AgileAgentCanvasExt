@@ -24,7 +24,7 @@ import { buildInboxEntries, type InboxItem } from './inbox-model';
 import { AgentEditor } from './AgentEditor';
 import { assigneeFor, parseTeamMessage, EMPTY_TEAM_VIEW, type AgentTeamView } from './agent-team-view';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
-import { AgentStatusBar } from './AgentStatusBar';
+import { BoardOptions } from './BoardOptions';
 import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
 import type { DependencyBadge } from './kanban-helpers';
@@ -1097,26 +1097,6 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           )}
         </div>
         <div className="agentic-kanban-toolbar">
-          <AgentStatusBar compact />
-          <Popover
-            label={<><span className={`board-dot board-dot--${autopilotTone}`} aria-hidden="true" />{autopilotLabel}</>}
-            ariaLabel={`Autopilot: ${autopilotLabel}`}
-            title="Continuous runs, the scheduler and the spending cap"
-            triggerClassName="board-btn"
-          >
-            <div className="board-popover-autonomy">
-              <AutonomyBar
-                schedulerState={schedulerState}
-                budgetStatus={budgetStatus}
-                pendingGoal={pendingGoal}
-                onOpenGoalReview={() => setGoalReviewOpen(true)}
-                systemicIssue={systemicIssue}
-                onDismissSystemicIssue={() => setSystemicIssue(null)}
-                showInbox={false}
-                part="controls"
-              />
-            </div>
-          </Popover>
           <Popover
             label={pendingGoal ? `Goal · review ${pendingGoal.proposedStories.length}` : 'New goal'}
             title="Describe a goal; it becomes stories (the lead plans it when you have one)"
@@ -1184,6 +1164,31 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           </Popover>
         </div>
       </header>
+
+      <div className="board-options-row">
+        <BoardOptions>
+              <Popover
+                label={<><span className={`board-dot board-dot--${autopilotTone}`} aria-hidden="true" />{autopilotLabel}</>}
+                ariaLabel={`Autopilot: ${autopilotLabel}`}
+                title="Continuous runs, the scheduler and the spending cap"
+                triggerClassName="board-btn"
+                align="left"
+              >
+                <div className="board-popover-autonomy">
+                  <AutonomyBar
+                    schedulerState={schedulerState}
+                    budgetStatus={budgetStatus}
+                    pendingGoal={pendingGoal}
+                    onOpenGoalReview={() => setGoalReviewOpen(true)}
+                    systemicIssue={systemicIssue}
+                    onDismissSystemicIssue={() => setSystemicIssue(null)}
+                    showInbox={false}
+                    part="controls"
+                  />
+                </div>
+              </Popover>
+        </BoardOptions>
+      </div>
 
       <div className="board-shell">
         <BoardNav

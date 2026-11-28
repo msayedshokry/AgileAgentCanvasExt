@@ -126,6 +126,14 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - Dragging an epic into In Progress with no lead agent now says nothing ran and what to do (move its stories, or add a lead), instead of a plain "Moved".
 - While an agent edits code, the knowledge graph updates one run at a time, shown in the status bar, instead of stacking "graphify: updating graph" notifications. Edits inside agent worktrees, backups and board files no longer start an update.
 
+### Fixed: The canvas Add button opens its menu again
+
+- The Add menu opened below the bottom of the window, so the button seemed to do nothing. It now opens under the button, above the canvas.
+- The header options (model, Workflows, ⋯) and the canvas actions (Add, Ask, Notes) are quiet chips: an icon and a label, with a soft fill on hover.
+- The agent board has a row of option chips, the way Copilot shows its session options: where cards run (own branch or this checkout), the branch they start from, what approving does (merge or pull request), permissions, the agent, and Autopilot. Each chip opens a short list of choices and saves it to the workspace settings.
+- The Plan | Agents switch is larger, and the selected section is tinted in its colour, so it is hard to miss.
+- The agent board has more room: wider columns, more space between and inside cards, larger titles and a roomier sidebar.
+
 ### Changed: Agents get avatars, and buttons look the same everywhere
 
 - Every agent has an emoji avatar, shown on cards, the card page, the epic page and the agent list. A new agent gets one nobody on the team uses yet (the way Multica hands them out), and the agent editor lets you pick another from 24; a person can keep their initials. Agents saved before this get a stable avatar from their name.

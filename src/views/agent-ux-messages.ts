@@ -47,11 +47,38 @@ export interface AgentStatusMessage {
   resolved: { kind: 'cli' | 'lm' | 'none'; id?: string; label: string; reason: string };
   /** The board's agent can't run right now (drives the "not ready" banner). */
   blocker?: string;
+  /** Where cards run: their own worktree and branch, or the checkout itself. */
+  isolation: 'worktree' | 'none';
+  /** How an approved card lands: merged into the current branch, or a pull request. */
+  delivery: 'merge' | 'pr';
+  /** The workspace's current git branch; absent outside a git repository. */
+  branch?: string;
+}
+
+/** The checked-out branch of the first workspace folder, or undefined. */
+async function currentBranch(): Promise<string | undefined> {
+  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!root) return undefined;
+  try {
+    const out = await execTool('git', ['rev-parse', '--abbrev-ref', 'HEAD'], root);
+    const name = out.code === 0 ? out.stdout.trim() : '';
+    return name && name !== 'HEAD' ? name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function boardOptions(): Pick<AgentStatusMessage, 'isolation' | 'delivery'> {
+  const config = vscode.workspace.getConfiguration(CONFIG);
+  return {
+    isolation: config.get<string>('agents.isolation', 'worktree') === 'none' ? 'none' : 'worktree',
+    delivery: config.get<boolean>('agents.openPullRequests', false) ? 'pr' : 'merge',
+  };
 }
 
 async function buildAgentStatus(): Promise<AgentStatusMessage> {
   clearHarnessPathCache();
-  const [harnesses, resolution] = await Promise.all([
+  const [harnesses, resolution, branch] = await Promise.all([
     probeReadiness({
       isOnPath: (b) => isOnPathCached(b),
       run: runProbe,
@@ -59,6 +86,7 @@ async function buildAgentStatus(): Promise<AgentStatusMessage> {
       aiderConfigHasApiBase: () => aiderConfigHasApiBase(),
     }),
     resolveBoardHarness(),
+    currentBranch(),
   ]);
   const resolved: AgentStatusMessage['resolved'] =
     resolution.kind === 'cli' ? { kind: 'cli', id: resolution.adapter.id, label: resolution.adapter.label, reason: resolution.reason }
@@ -70,7 +98,10 @@ async function buildAgentStatus(): Promise<AgentStatusMessage> {
     const r = harnesses.find((h) => h.id === resolution.adapter.id);
     if (r?.auth === 'signed-out') blocker = `${r.label} is not signed in, so board runs will fail.`;
   }
-  return { type: 'harness:status', harnesses, configured: getConfiguredHarness(), posture: getPermissionPosture(), resolved, blocker };
+  return {
+    type: 'harness:status', harnesses, configured: getConfiguredHarness(), posture: getPermissionPosture(), resolved, blocker,
+    ...boardOptions(), ...(branch ? { branch } : {}),
+  };
 }
 
 async function postStatus(post: Post): Promise<void> {
@@ -293,7 +324,7 @@ async function addressReview(artifactId: string, store: ArtifactStore, post: Pos
 // ── Router ───────────────────────────────────────────────────────────────────
 
 const HANDLED = new Set([
-  'harness:getStatus', 'harness:select', 'harness:setPosture', 'harness:signIn', 'harness:install', 'harness:smoke', 'harness:pick',
+  'harness:getStatus', 'harness:select', 'harness:setPosture', 'harness:setIsolation', 'harness:setDelivery', 'harness:signIn', 'harness:install', 'harness:smoke', 'harness:pick',
   'kanban:fixAction', 'kanban:previewPrompt', 'kanban:getRunTimeline', 'kanban:revertRun', 'kanban:showOutput', 'kanban:addressReview',
   'kanban:getInbox', 'kanban:dismissInbox',
 ]);
@@ -325,6 +356,17 @@ export async function handleAgentUxMessage(
       case 'harness:setPosture': {
         const posture = message.posture === 'full' ? 'full' : 'sandboxed';
         await vscode.workspace.getConfiguration(CONFIG).update('agents.permissionPosture', posture, vscode.ConfigurationTarget.Workspace);
+        await postStatus(post);
+        break;
+      }
+      case 'harness:setIsolation': {
+        const isolation = message.isolation === 'none' ? 'none' : 'worktree';
+        await vscode.workspace.getConfiguration(CONFIG).update('agents.isolation', isolation, vscode.ConfigurationTarget.Workspace);
+        await postStatus(post);
+        break;
+      }
+      case 'harness:setDelivery': {
+        await vscode.workspace.getConfiguration(CONFIG).update('agents.openPullRequests', message.delivery === 'pr', vscode.ConfigurationTarget.Workspace);
         await postStatus(post);
         break;
       }

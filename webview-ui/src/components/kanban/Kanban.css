@@ -9,9 +9,9 @@
 .kanban-board,
 .agentic-kanban-board {
   display: grid;
-  grid-template-columns: repeat(5, minmax(180px, 1fr));
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(5, minmax(232px, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
   flex: 1;
   min-height: 0;
   overflow-x: auto;
@@ -28,7 +28,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: var(--space-2) 6px;
+  padding: var(--space-3) var(--space-2);
 }
 
 /* Feature 2: WIP limit exceeded — red border + warning text */
@@ -57,7 +57,7 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-2);
-  padding: 2px 6px var(--space-2);
+  padding: 2px var(--space-2) var(--space-3);
 }
 
 .kanban-column-label {
@@ -65,7 +65,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--weight-strong);
   color: var(--ink);
   white-space: nowrap;
@@ -162,7 +162,7 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .kanban-column-empty {
@@ -183,14 +183,14 @@
   background: var(--surface-card);
   border: var(--rule-width) solid var(--card-edge);
   border-radius: var(--radius-card);
-  padding: 10px 12px;
+  padding: var(--space-3) 14px;
   cursor: grab;
   box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent);
   transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   animation: cardSlideIn var(--dur-base) var(--ease-out) calc(var(--card-index, 0) * 20ms) backwards;
   user-select: none;
 }
@@ -270,7 +270,7 @@
 
 .kanban-card-key {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-3);
   letter-spacing: 0.02em;
 }
@@ -298,9 +298,9 @@
 @keyframes kanban-spin { to { transform: rotate(360deg); } }
 
 .kanban-card-title {
-  font-size: var(--text-body);
+  font-size: 13.5px;
   font-weight: var(--weight-strong);
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 3;

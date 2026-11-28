@@ -89,7 +89,7 @@ export function AppHeader({ view, onViewChange, projectName, onSwitchProject, ru
               onClick={() => onViewChange(tab.view)}
               onKeyDown={handleKeyDown}
             >
-              <Icon name={tab.icon} size={15} />
+              <Icon name={tab.icon} size={18} />
               <span className="view-switch-label">{tab.label}</span>
               {isAgents && runningCount > 0 && <span className="view-switch-live" aria-hidden="true" />}
               {isAgents && needsYouCount > 0 && (

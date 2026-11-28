@@ -43,6 +43,9 @@ export type IconName =
   // Modal / search icons
   | 'search'          // was 🔍
   | 'folder'          // was 📁
+  | 'git-branch'      // a branch off a line
+  | 'git-pr'          // pull request
+  | 'shield'          // permissions
   | 'wrench'          // was 🛠️
   // Misc
   | 'pop-out'         // was ⤢
@@ -317,6 +320,21 @@ const paths: Record<IconName, JSX.Element> = {
       <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
       <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </>
+  ),
+  'git-branch': (
+    <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="7" r="2" />
+      <path d="M6 7v10" /><path d="M18 9c0 5-12 3-12 8" />
+    </g>
+  ),
+  'git-pr': (
+    <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="5" r="2" /><circle cx="6" cy="19" r="2" /><circle cx="18" cy="19" r="2" />
+      <path d="M6 7v10" /><path d="M18 17V9a3 3 0 0 0-3-3h-4" /><path d="m13 3-3 3 3 3" />
+    </g>
+  ),
+  shield: (
+    <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
   ),
   folder: (
     // Folder
