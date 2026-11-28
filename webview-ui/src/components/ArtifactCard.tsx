@@ -109,6 +109,7 @@ const STATUS_BADGES: Record<Artifact['status'], { label: string; className: stri
   'review': { label: 'Review', className: 'status-review' },
   'ready-for-review': { label: 'Ready for Review', className: 'status-review' },
   'blocked': { label: 'Blocked', className: 'status-blocked' },
+  'failed': { label: 'Failed', className: 'status-blocked' },
   'complete': { label: 'Complete', className: 'status-complete' },
   'completed': { label: 'Completed', className: 'status-complete' },
   'done': { label: 'Done', className: 'status-complete' },

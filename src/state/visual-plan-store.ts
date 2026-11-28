@@ -52,11 +52,6 @@ export function settleAbandonedPlan(plan: VisualPlan, nowMs = Date.now()): Visua
   return abandoned ? { ...plan, status: 'failed' } : plan;
 }
 
-/** A failed plan with no content has nothing to show on the canvas. */
-export function isEmptyFailedPlan(plan: VisualPlan): boolean {
-  return plan.status === 'failed' && plan.sections.length === 0;
-}
-
 function normalizePlan(raw: unknown, fallbackId: string): VisualPlan | null {
   if (!raw || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;
@@ -76,8 +71,13 @@ function normalizePlan(raw: unknown, fallbackId: string): VisualPlan | null {
   };
 }
 
+/** How often open plans are checked for an agent that stopped. */
+const SETTLE_CHECK_MS = 60_000;
+
 export class VisualPlanStore {
   private plans = new Map<string, VisualPlan>();
+  /** Plans deleted this session: a late write by their agent must not bring them back. */
+  private deleted = new Set<string>();
   private _onDidChange?: vscode.EventEmitter<VisualPlan[]>;
 
   private get _emitter(): vscode.EventEmitter<VisualPlan[]> {
@@ -166,7 +166,25 @@ export class VisualPlanStore {
     return dir ? path.join(dir, `${id}.plan.json`) : undefined;
   }
 
+  /**
+   * Mark plans whose agent stopped as failed while VS Code is open (hydrate
+   * does the same at startup). Returns true when anything changed.
+   */
+  settleStale(nowMs = Date.now()): boolean {
+    let changed = false;
+    for (const [id, plan] of this.plans) {
+      const settled = settleAbandonedPlan(plan, nowMs);
+      if (settled !== plan) {
+        this.plans.set(id, settled);
+        changed = true;
+      }
+    }
+    if (changed) this._emitter.fire(this.list());
+    return changed;
+  }
+
   async delete(id: string): Promise<void> {
+    this.deleted.add(id);
     this.plans.delete(id);
     const filePath = this.planFilePath(id);
     if (!filePath) return;
@@ -191,6 +209,12 @@ export class VisualPlanStore {
       const parsed = JSON.parse(Buffer.from(raw).toString('utf-8'));
       const plan = normalizePlan(parsed, this.idFromUri(uri) ?? `plan-${Date.now()}`);
       if (!plan) return;
+      if (this.deleted.has(plan.id)) {
+        // The agent of a deleted or retried plan finished late: drop its file.
+        await vscode.workspace.fs.delete(uri);
+        logger.info(`Discarded late write for deleted plan ${plan.id}`);
+        return;
+      }
       this.plans.set(plan.id, plan);
       this._emitter.fire(this.list());
       logger.info(`Ingested plan ${plan.id} from disk`);
@@ -216,8 +240,9 @@ export class VisualPlanStore {
       const id = this.idFromUri(uri);
       if (id && this.plans.delete(id)) this._emitter.fire(this.list());
     });
+    const timer = setInterval(() => this.settleStale(), SETTLE_CHECK_MS);
     logger.info(`Watching plans directory for external plan files: ${dir}`);
-    return watcher;
+    return { dispose: () => { clearInterval(timer); watcher.dispose(); } };
   }
 
   dispose(): void {

@@ -30,6 +30,10 @@ export interface VisualPlanSectionsProps {
   hideClose?: boolean;
   /** Called when the user clicks close. */
   onClose?: () => void;
+  /** Start a plan that was never written again (failed with nothing in it). */
+  onRetry?: () => void;
+  /** Delete the plan (the extension confirms first). */
+  onDelete?: () => void;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -948,19 +952,23 @@ function DispatchedBanner(_props: { plan: VisualPlan }) {
 
 // ── Main component ──────────────────────────────────────────────────────────
 
-export function VisualPlanSections({
-  plan,
-  onApprove,
-  onRequestChanges,
-  onComment,
-  onAnswerQuestion,
-  showApproveBar = true,
-  hideClose = false,
-  onClose,
-}: VisualPlanSectionsProps) {
-  const [activeSectionId, setActiveSectionId] = useState<string>('');
-  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+/** Delete as a quiet text button; the extension asks to confirm. */
+function DeleteButton({ onDelete }: { onDelete: () => void }) {
+  return (
+    <button type="button" className="btn btn-ghost btn-small" onClick={onDelete} data-testid="vp-delete-btn">
+      <Icon name="trash" size={14} />
+      <span>Delete</span>
+    </button>
+  );
+}
 
+/**
+ * Empty, generating and never-written plans get a simple state; anything with
+ * content goes to the review body. Keeping the early returns out of the body
+ * keeps its hooks in a fixed order when a plan changes state on screen.
+ */
+export function VisualPlanSections(props: VisualPlanSectionsProps) {
+  const { plan, onRetry, onDelete } = props;
   // Empty state
   if (!plan) {
     return (
@@ -992,11 +1000,55 @@ export function VisualPlanSections({
             The AI is analyzing your codebase and building a structured plan with
             file maps, diagrams, API specs, and task breakdowns.
           </div>
+          {onDelete && <div className="vp-state-actions"><DeleteButton onDelete={onDelete} /></div>}
         </div>
       </div>
     );
   }
 
+  // Failed before anything was written
+  if (plan.status === 'failed' && plan.sections.length === 0) {
+    return (
+      <div className="vp-panel">
+        <div className="vp-generating" role="status" data-testid="vp-failed">
+          <div className="vp-generating-title">This plan was never written</div>
+          <div className="vp-generating-goal">"{plan.goal}"</div>
+          <div className="vp-generating-hint">
+            The agent asked to write it stopped before saving anything.
+            {onRetry && ' Retry sends the same goal to the agent you have selected.'}
+          </div>
+          {(onRetry || onDelete) && (
+            <div className="vp-state-actions">
+              {onRetry && (
+                <button type="button" className="btn btn-primary" onClick={onRetry} data-testid="vp-retry-btn">
+                  <Icon name="refresh" size={14} />
+                  <span>Retry</span>
+                </button>
+              )}
+              {onDelete && <DeleteButton onDelete={onDelete} />}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return <PlanReview {...props} plan={plan} />;
+}
+
+function PlanReview({
+  plan,
+  onApprove,
+  onRequestChanges,
+  onComment,
+  onAnswerQuestion,
+  showApproveBar = true,
+  hideClose = false,
+  onClose,
+  onDelete,
+}: VisualPlanSectionsProps & { plan: VisualPlan }) {
+  const [activeSectionId, setActiveSectionId] = useState<string>('');
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const isReadOnly = plan.status === 'dispatched';
 
   const handleToggleTask = useCallback((taskId: string) => {
@@ -1063,6 +1115,7 @@ export function VisualPlanSections({
           <span className="vp-header-stat">{totalTaskCount} tasks</span>
           <span className="vp-header-stat">{plan.comments.length} comments</span>
         </div>
+        {onDelete && <DeleteButton onDelete={onDelete} />}
         {!hideClose && (
           <button className="vp-close-btn" onClick={onClose} aria-label="Close plan">
             ✕

@@ -3,7 +3,7 @@ import { ArtifactStore } from '../state/artifact-store';
 import { createLogger } from '../utils/logger';
 import type { AcceptanceCriterion } from '../types/index';
 import type { VisualPlan } from '../types/visual-plan';
-import { isEmptyFailedPlan, visualPlanStore } from '../state/visual-plan-store';
+import { visualPlanStore } from '../state/visual-plan-store';
 import { detectGraphify } from '../integrations/graphify/graphify-detector';
 import { loadCommunities } from '../integrations/graphify/graph-loader';
 
@@ -293,7 +293,6 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string, pla
     const projectLoading = typeof store.isLoading === 'function' && store.isLoading();
     if (plans && plans.length > 0 && !projectLoading) {
         for (const plan of plans) {
-            if (isEmptyFailedPlan(plan)) continue;
             const height = calculateCardHeight('visual-plan', plan.title, plan.goal, 30);
 
             // Compute task counts so the renderer can show a single
@@ -316,7 +315,7 @@ export function buildArtifacts(store: ArtifactStore, workspaceRoot?: string, pla
                 type: 'visual-plan',
                 title: plan.title,
                 description: plan.goal,
-                status: plan.status === 'dispatched' ? 'approved' : (plan.status === 'generating' ? 'in-progress' : 'draft'),
+                status: plan.status === 'dispatched' ? 'approved' : plan.status === 'generating' ? 'in-progress' : plan.status === 'failed' ? 'failed' : 'draft',
                 position: { x: COLUMNS['visual-plan'], y: yOffsets['visual-plan'] },
                 size: { width: CARD_WIDTHS['visual-plan'], height },
                 dependencies: plan.targets ?? [],

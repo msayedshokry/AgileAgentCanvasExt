@@ -61,9 +61,14 @@ export interface AgentStatusMessage {
   baseBranch?: string;
   /** Local branches to pick a start branch from (at most 50). */
   branches: string[];
+  /** Branches only on origin (at most 50); picking one makes a local copy. */
+  remoteBranches: string[];
 }
 
-interface GitFacts { isGit: boolean; branch?: string; branches: string[]; hasGh: boolean }
+interface GitFacts { isGit: boolean; branch?: string; branches: string[]; remoteBranches: string[]; hasGh: boolean }
+
+const NO_RUN = { code: 1, stdout: '', stderr: '' };
+const lines = (out: string) => out.split(/\r?\n/).map((b) => b.trim()).filter(Boolean);
 
 /** What the board needs to know about git and gh for its option chips. */
 async function gitFacts(): Promise<GitFacts> {
@@ -71,18 +76,22 @@ async function gitFacts(): Promise<GitFacts> {
   const run = async (tool: string, args: string[]) => {
     try { return await execTool(tool, args, root); } catch { return { code: 1, stdout: '', stderr: '' }; }
   };
-  const [inside, head, list, gh] = await Promise.all([
-    root ? run('git', ['rev-parse', '--is-inside-work-tree']) : Promise.resolve({ code: 1, stdout: '', stderr: '' }),
-    root ? run('git', ['rev-parse', '--abbrev-ref', 'HEAD']) : Promise.resolve({ code: 1, stdout: '', stderr: '' }),
-    root ? run('git', ['for-each-ref', '--count=50', '--sort=-committerdate', '--format=%(refname:short)', 'refs/heads']) : Promise.resolve({ code: 1, stdout: '', stderr: '' }),
+  const [inside, head, list, remote, gh] = await Promise.all([
+    root ? run('git', ['rev-parse', '--is-inside-work-tree']) : Promise.resolve(NO_RUN),
+    root ? run('git', ['rev-parse', '--abbrev-ref', 'HEAD']) : Promise.resolve(NO_RUN),
+    root ? run('git', ['for-each-ref', '--count=50', '--sort=-committerdate', '--format=%(refname:short)', 'refs/heads']) : Promise.resolve(NO_RUN),
+    root ? run('git', ['for-each-ref', '--count=50', '--sort=-committerdate', '--format=%(refname:lstrip=3)', 'refs/remotes/origin']) : Promise.resolve(NO_RUN),
     run('gh', ['--version']),
   ]);
   const isGit = inside.code === 0 && inside.stdout.trim() === 'true';
   const name = head.code === 0 ? head.stdout.trim() : '';
+  const branches = isGit && list.code === 0 ? lines(list.stdout) : [];
+  const local = new Set(branches);
   return {
     isGit,
     ...(isGit && name && name !== 'HEAD' ? { branch: name } : {}),
-    branches: isGit && list.code === 0 ? list.stdout.split(/\r?\n/).map((b) => b.trim()).filter(Boolean) : [],
+    branches,
+    remoteBranches: isGit && remote.code === 0 ? lines(remote.stdout).filter((b) => b !== 'HEAD' && !local.has(b)) : [],
     hasGh: gh.code === 0,
   };
 }
@@ -406,8 +415,19 @@ export async function handleAgentUxMessage(
       }
       case 'harness:setBaseBranch': {
         const name = typeof message.branch === 'string' ? message.branch.trim() : '';
-        // Only a real local branch name (or empty for "the checked-out one").
-        const ok = name === '' || (/^[\w./-]+$/.test(name) && (await gitFacts()).branches.includes(name));
+        // Only a real branch name (or empty for "the checked-out one"). A
+        // branch only on origin gets a local copy that tracks it first.
+        let ok = name === '';
+        if (!ok && /^[\w./-]+$/.test(name)) {
+          const facts = await gitFacts();
+          ok = facts.branches.includes(name);
+          if (!ok && facts.remoteBranches.includes(name)) {
+            const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            const made = await execTool('git', ['branch', '--track', name, `origin/${name}`], root);
+            ok = made.code === 0;
+            if (!ok) void vscode.window.showWarningMessage(`Could not copy ${name} from origin: ${(made.stderr || made.stdout).trim().slice(0, 200)}`);
+          }
+        }
         if (ok) await vscode.workspace.getConfiguration(CONFIG).update('agents.baseBranch', name || undefined, vscode.ConfigurationTarget.Workspace);
         await postStatus(post);
         break;

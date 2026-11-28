@@ -22,7 +22,7 @@ import { readVerdictFile, resultFilePath, getOutputFolder } from '../workflow/ka
 import { visualPlanStore } from '../state/visual-plan-store';
 import { getSelectedProvider, openChatWithResult } from '../commands/chat-bridge';
 import { isVisualPlanEnabled, VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
-import type { VisualPlan } from '../types/visual-plan';
+import type { VisualPlan, VisualPlanGenerateRequest } from '../types/visual-plan';
 import { budgetEnforcer } from '../workflow/budget-enforcer';
 import { circuitBreaker } from '../workflow/circuit-breaker';
 
@@ -326,6 +326,40 @@ function buildVisualPlanTerminalPrompt(plan: VisualPlan, filePath: string, sourc
     '',
     'Include at minimum an "overview", a "fileMap", and a "tasks" section. Write valid JSON only to that file.',
   ].filter(Boolean).join('\n');
+}
+
+/**
+ * Start a plan through the provider chosen in the canvas dropdown (Copilot →
+ * chat, Claude Code / OMP / … → terminal), matching how every other card
+ * action routes. A 'generating' stub is saved so a card appears at once; the
+ * agent writes the finished JSON to a known path, which the plans-dir watcher
+ * ingests. Errors are posted to the webview, never thrown.
+ */
+async function startPlanGeneration(request: VisualPlanGenerateRequest, store: ArtifactStore, webview?: vscode.Webview): Promise<void> {
+  try {
+    const sourceTitle = request.sourceArtifactId
+      ? store.findArtifactById(request.sourceArtifactId)?.artifact?.title
+      : undefined;
+    const plan = await visualPlanService.createPendingPlan({
+      goal: request.goal,
+      sourceArtifactId: request.sourceArtifactId,
+      context: request.context as never,
+    });
+    const filePath = visualPlanStore.planFilePath(plan.id);
+    if (!filePath) throw new Error('Open a workspace folder to generate a Visual Plan.');
+    webview?.postMessage({ type: 'visualPlan:generating', planId: plan.id, goal: request.goal });
+
+    const prompt = buildVisualPlanTerminalPrompt(plan, filePath, sourceTitle);
+    const chatResult = await openChatWithResult({ provider: getSelectedProvider(), query: prompt });
+    // If the prompt landed on the clipboard (no provider available, no model
+    // configured, etc.), say so rather than leaving a silent spinner.
+    if (!chatResult.ok && chatResult.message) {
+      webview?.postMessage({ type: 'visualPlan:error', error: chatResult.message });
+    }
+  } catch (error) {
+    logger.warn(`[AgenticKanban] plan generation failed: ${errMsg(error)}`);
+    webview?.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
+  }
 }
 
 export async function handleAgenticKanbanMessage(
@@ -1081,64 +1115,58 @@ export async function handleAgenticKanbanMessage(
         }
         return true;
       }
-      try {
-        const sourceTitle = message.sourceArtifactId
-          ? store.findArtifactById(message.sourceArtifactId)?.artifact?.title
-          : undefined;
-
-        let goal = (message.goal ?? message.text ?? '').trim();
-        if (!goal) {
-          // No goal supplied (e.g. the canvas/kanban "Plan" button posts
-          // goal:'') — prompt natively rather than generating an empty,
-          // meaningless plan. Pre-contextualize when scoped to an artifact.
-          const entered = await vscode.window.showInputBox({
-            title: 'Generate Visual Plan',
-            prompt: sourceTitle
-              ? `Describe the change to plan for "${sourceTitle}"`
-              : 'Describe what you want to plan',
-            placeHolder: 'e.g. Add OAuth login with GitHub',
-            ignoreFocusOut: true,
-          });
-          goal = (entered ?? '').trim();
-          if (!goal) {
-            return true; // user cancelled the prompt — no-op
-          }
-        }
-
-        // Route through the provider chosen in the canvas dropdown (Copilot →
-        // chat, Claude Code / OMP / … → terminal), matching how every other
-        // card action routes. Persist a 'generating' stub so a card appears
-        // immediately, then instruct the agent to WRITE the finished plan JSON
-        // to a known path; the store's plans-dir watcher ingests it and the
-        // card fills in. (The /visual-plan chat command keeps the direct-API
-        // path for an immediate structured result.)
-        const plan = await visualPlanService.createPendingPlan({
-          goal,
-          sourceArtifactId: message.sourceArtifactId,
-          context: message.context,
+      const sourceTitle = message.sourceArtifactId
+        ? store.findArtifactById(message.sourceArtifactId)?.artifact?.title
+        : undefined;
+      let goal = (message.goal ?? message.text ?? '').trim();
+      if (!goal) {
+        // No goal supplied (e.g. the canvas/kanban "Plan" button posts
+        // goal:'') — prompt natively rather than generating an empty,
+        // meaningless plan. Pre-contextualize when scoped to an artifact.
+        const entered = await vscode.window.showInputBox({
+          title: 'Generate Visual Plan',
+          prompt: sourceTitle
+            ? `Describe the change to plan for "${sourceTitle}"`
+            : 'Describe what you want to plan',
+          placeHolder: 'e.g. Add OAuth login with GitHub',
+          ignoreFocusOut: true,
         });
-        const filePath = visualPlanStore.planFilePath(plan.id);
-        if (!filePath) {
-          throw new Error('Open a workspace folder to generate a Visual Plan.');
-        }
-        if (webview) {
-          webview.postMessage({ type: 'visualPlan:generating', planId: plan.id, goal });
-        }
+        goal = (entered ?? '').trim();
+        if (!goal) return true; // user cancelled the prompt — no-op
+      }
+      await startPlanGeneration({ goal, sourceArtifactId: message.sourceArtifactId, context: message.context }, store, webview);
+      return true;
+    }
 
-        const prompt = buildVisualPlanTerminalPrompt(plan, filePath, sourceTitle);
-        const chatResult = await openChatWithResult({ provider: getSelectedProvider(), query: prompt });
-        // If the prompt landed on the clipboard (no provider available, no
-        // model configured, etc.), surface the failure message so the UI
-        // doesn't silently swallow it — the plan file is created either way
-        // but the LLM needs to know it was sent somewhere.
-        if (!chatResult.ok && chatResult.message && webview) {
-          webview.postMessage({ type: 'visualPlan:error', error: chatResult.message });
-        }
-      } catch (error) {
-        logger.warn(`[AgenticKanban] visualPlan:generate failed: ${errMsg(error)}`);
-        if (webview) {
-          webview.postMessage({ type: 'visualPlan:error', error: errMsg(error) });
-        }
+    // A plan whose agent never wrote it: start it again with the same goal,
+    // replacing the old card.
+    case 'visualPlan:retry': {
+      const old = visualPlanService.get(message.planId);
+      if (!old) {
+        webview?.postMessage({ type: 'visualPlan:error', error: `Plan not found: ${message.planId}` });
+        return true;
+      }
+      if (!isVisualPlanEnabled()) {
+        webview?.postMessage({ type: 'visualPlan:error', error: VISUAL_PLAN_DISABLED_MESSAGE });
+        return true;
+      }
+      await visualPlanStore.delete(old.id);
+      webview?.postMessage({ type: 'visualPlan:deleted', planId: old.id });
+      await startPlanGeneration({ goal: old.goal, sourceArtifactId: old.sourceArtifactId }, store, webview);
+      return true;
+    }
+
+    case 'visualPlan:delete': {
+      const plan = visualPlanService.get(message.planId);
+      if (!plan) return true;
+      const choice = await vscode.window.showWarningMessage(
+        `Delete the plan "${plan.title}"?`,
+        { modal: true, detail: 'Its file is removed from the plans folder. This cannot be undone.' },
+        'Delete',
+      );
+      if (choice === 'Delete') {
+        await visualPlanStore.delete(plan.id);
+        webview?.postMessage({ type: 'visualPlan:deleted', planId: plan.id });
       }
       return true;
     }

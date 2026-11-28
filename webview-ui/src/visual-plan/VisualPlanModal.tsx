@@ -123,6 +123,16 @@ export function VisualPlanModal({
     vscode.postMessage({ type: 'openVisualPlan', artifactId });
   }, [artifactId]);
 
+  const handleRetry = useCallback(() => {
+    vscode.postMessage({ type: 'visualPlan:retry', planId: artifactId });
+    onClose();
+  }, [artifactId, onClose]);
+
+  // The extension asks to confirm before the file goes.
+  const handleDelete = useCallback(() => {
+    vscode.postMessage({ type: 'visualPlan:delete', planId: artifactId });
+  }, [artifactId]);
+
   const handleAnswerQuestion = useCallback(
     (questionId: string, answer: string) => {
       vscode.postMessage({
@@ -226,7 +236,7 @@ export function VisualPlanModal({
             Without this guard, the tree-nesting test would have to mock a
             full VisualPlan payload just to assert the modal mount contract. */}
         <div className="vp-modal-content">
-          {plan && (plan.sections?.length ?? 0) > 0 ? (
+          {plan && ((plan.sections?.length ?? 0) > 0 || plan.status === 'failed' || plan.status === 'generating') ? (
             <VisualPlanSections
               plan={plan}
               onApprove={(taskIds) =>
@@ -247,6 +257,9 @@ export function VisualPlanModal({
                 })
               }
               onAnswerQuestion={handleAnswerQuestion}
+              onRetry={handleRetry}
+              onDelete={handleDelete}
+              hideClose
             />
           ) : (
             <div className="vp-modal-generating" data-testid="visual-plan-modal-generating">

@@ -31,6 +31,9 @@ export function VisualPlanApp() {
       case 'visualPlan:error':
         setLoading(false);
         break;
+      case 'visualPlan:deleted':
+        setPlan((p) => (p?.id === message.planId ? null : p));
+        break;
     }
   });
 
@@ -67,6 +70,12 @@ export function VisualPlanApp() {
         }}
         onAnswerQuestion={(questionId, answer) => {
           if (plan) vscode.postMessage({ type: 'visualPlan:answerQuestion', planId: plan.id, questionId, answer });
+        }}
+        onRetry={() => {
+          if (plan) vscode.postMessage({ type: 'visualPlan:retry', planId: plan.id });
+        }}
+        onDelete={() => {
+          if (plan) vscode.postMessage({ type: 'visualPlan:delete', planId: plan.id });
         }}
       />
     </div>

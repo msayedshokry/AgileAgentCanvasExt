@@ -340,6 +340,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         setToast({ message: `Plan generation failed: ${message.error}`, type: 'error' });
         break;
       }
+      case 'visualPlan:deleted': {
+        setPendingPlan((p) => (p?.id === message.planId ? null : p));
+        break;
+      }
       case 'terminalReconnected': {
         // Issue #35: the autonomy lifecycle restored the stream for an
         // orphaned terminal after VS Code restart / network blip. Show a
@@ -1225,6 +1229,11 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
           onComment={(comment) => {
             vscode.postMessage({ type: 'visualPlan:comment', planId: pendingPlan.id, comment });
           }}
+          onRetry={() => {
+            vscode.postMessage({ type: 'visualPlan:retry', planId: pendingPlan.id });
+            setPendingPlan(null);
+          }}
+          onDelete={() => vscode.postMessage({ type: 'visualPlan:delete', planId: pendingPlan.id })}
           onClose={() => setPendingPlan(null)}
         />
       )}

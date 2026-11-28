@@ -352,3 +352,41 @@ describe('VisualPlanModal', () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 });
+
+describe('VisualPlanModal — a plan that was never written', () => {
+  const failed: VisualPlan = { ...samplePlan, id: 'plan-f', status: 'failed', sections: [] };
+  beforeEach(() => postMessageMock.mockClear());
+
+  it('says so instead of spinning, and Retry asks for the plan again', () => {
+    const onClose = vi.fn();
+    render(<VisualPlanModal artifactId="plan-f" plan={failed} onClose={onClose} />);
+    expect(screen.getByTestId('vp-failed')).toHaveTextContent('This plan was never written');
+    expect(screen.queryByTestId('visual-plan-modal-generating')).toBeNull();
+    fireEvent.click(screen.getByTestId('vp-retry-btn'));
+    expect(postMessageMock).toHaveBeenCalledWith({ type: 'visualPlan:retry', planId: 'plan-f' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('Delete works for any plan', () => {
+    render(<VisualPlanModal artifactId="plan-1" plan={samplePlan} onClose={() => undefined} />);
+    fireEvent.click(screen.getByTestId('vp-delete-btn'));
+    expect(postMessageMock).toHaveBeenCalledWith({ type: 'visualPlan:delete', planId: 'plan-1' });
+  });
+});
+
+describe('VisualPlanSections — a plan changing state on screen', () => {
+  it('goes from generating to ready without a hooks-order crash', async () => {
+    const { VisualPlanSections } = await import('./VisualPlanSections');
+    const { rerender } = render(<VisualPlanSections plan={{ ...samplePlan, status: 'generating', sections: [] }} />);
+    rerender(<VisualPlanSections plan={samplePlan} />);
+    expect(screen.getByText('Refactor auth flow')).toBeInTheDocument();
+  });
+
+  it('offers Delete while still generating', async () => {
+    const { VisualPlanSections } = await import('./VisualPlanSections');
+    const onDelete = vi.fn();
+    render(<VisualPlanSections plan={{ ...samplePlan, status: 'generating', sections: [] }} onDelete={onDelete} />);
+    fireEvent.click(screen.getByTestId('vp-delete-btn'));
+    expect(onDelete).toHaveBeenCalled();
+  });
+});

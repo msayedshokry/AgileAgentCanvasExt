@@ -21,7 +21,7 @@ describe('optionsFromStatus', () => {
   it('reads the options from a status message and ignores other messages', () => {
     expect(optionsFromStatus(status())).toEqual({
       isolation: 'worktree', delivery: 'merge', posture: 'sandboxed', branch: 'main',
-      branches: ['main', 'develop'], isGit: true, hasGh: true,
+      branches: ['main', 'develop'], remoteBranches: [], isGit: true, hasGh: true,
     });
     expect(optionsFromStatus({ type: 'kanban:update' })).toBeNull();
   });
@@ -61,6 +61,16 @@ describe('BoardOptions', () => {
     open('Cards start from: develop');
     fireEvent.click(screen.getByRole('menuitemradio', { name: /^main/ }));
     expect(posted).toContainEqual({ type: 'harness:setBaseBranch', branch: '' });
+  });
+
+  it('offers branches that are only on origin, and says picking one copies it', () => {
+    render(<BoardOptions />);
+    deliver(status({ remoteBranches: ['release/2.0'] }));
+    open('Cards start from: main');
+    const remote = screen.getByRole('menuitemradio', { name: /^release\/2\.0/ });
+    expect(remote).toHaveTextContent('Only on origin');
+    fireEvent.click(remote);
+    expect(posted).toContainEqual({ type: 'harness:setBaseBranch', branch: 'release/2.0' });
   });
 
   it('cannot pick pull requests without the GitHub CLI, and says why', () => {

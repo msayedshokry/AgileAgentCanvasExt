@@ -25,6 +25,8 @@ export interface BoardOptionsState {
   /** The branch cards start from; absent means the checked-out one. */
   baseBranch?: string;
   branches: string[];
+  /** Branches only on origin; picking one makes a local copy. */
+  remoteBranches: string[];
   isGit: boolean;
   hasGh: boolean;
 }
@@ -55,6 +57,8 @@ const POSTURE: readonly Choice<Posture>[] = [
   { value: 'full', label: 'Full access', hint: 'Every tool is approved without asking, including shell commands.' },
 ];
 
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((b): b is string => typeof b === 'string') : []);
+
 /** The options carried by a `harness:status` message, or null when it has none. */
 export function optionsFromStatus(msg: unknown): BoardOptionsState | null {
   const m = msg as Partial<BoardOptionsState> & { type?: string } | null;
@@ -66,7 +70,8 @@ export function optionsFromStatus(msg: unknown): BoardOptionsState | null {
     posture: m.posture === 'full' ? 'full' : 'sandboxed',
     ...(typeof m.branch === 'string' && m.branch ? { branch: m.branch } : {}),
     ...(typeof m.baseBranch === 'string' && m.baseBranch ? { baseBranch: m.baseBranch } : {}),
-    branches: Array.isArray(m.branches) ? m.branches.filter((b): b is string => typeof b === 'string') : [],
+    branches: strings(m.branches),
+    remoteBranches: strings(m.remoteBranches),
     isGit,
     hasGh: m.hasGh !== false,
   };
@@ -163,6 +168,7 @@ export function BoardOptions({ children }: { children?: ReactNode }) {
     ? [
         { value: '', label: state.branch ?? 'Checked-out branch', hint: 'The branch you have checked out, whichever it is when a card starts.' },
         ...(state.branches ?? []).filter((b) => b !== state.branch).map((b) => ({ value: b, label: b, hint: `Cards start from ${b} and land on it; your checkout stays on ${state.branch ?? 'its branch'}.` })),
+        ...(state.remoteBranches ?? []).map((b) => ({ value: b, label: b, hint: `Only on origin. Picking it makes a local ${b} that tracks origin/${b}.` })),
       ]
     : [];
 

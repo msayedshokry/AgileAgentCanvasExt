@@ -1187,6 +1187,13 @@
   user-select: none;
 }
 
+/* Retry / Delete under an empty, generating or failed plan. */
+.vp-state-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .vp-modal-content {
   flex: 1;
   display: flex;

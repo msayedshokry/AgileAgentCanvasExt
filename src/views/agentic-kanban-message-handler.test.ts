@@ -27,6 +27,7 @@ vi.mock('../state/visual-plan-store', () => ({
   visualPlanStore: {
     planFilePath: vi.fn((id: string) => `/ws/.agileagentcanvas-context/plans/${id}.plan.json`),
     list: vi.fn(() => []),
+    delete: vi.fn(async () => undefined),
   },
 }));
 vi.mock('../commands/chat-bridge', () => ({
@@ -39,6 +40,7 @@ import { VISUAL_PLAN_DISABLED_MESSAGE } from '../utils/visual-plan-config';
 import { getTraceRecorder } from '../trace/trace-recorder';
 import { visualPlanService } from '../workflow/visual-plan-service';
 import { openChatWithResult } from '../commands/chat-bridge';
+import { visualPlanStore } from '../state/visual-plan-store';
 import * as vscode from 'vscode';
 import type { ArtifactStore } from '../state/artifact-store';
 
@@ -530,5 +532,36 @@ describe('handleAgenticKanbanMessage — visualPlan:generate config gate', () =>
 
     expect(result).toBe(true);
     expect(visualPlanService.generate).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleAgenticKanbanMessage — retry and delete a plan', () => {
+  const failed = {
+    id: 'plan-old', title: 'Core loop', goal: 'Build the core loop', status: 'failed' as const,
+    createdAt: 1, updatedAt: 1, sourceArtifactId: 'S-9', sections: [], comments: [],
+  };
+  const webview = { postMessage: vi.fn() } as unknown as vscode.Webview;
+  const store = { findArtifactById: vi.fn(() => undefined) } as unknown as ArtifactStore;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(vscode.workspace.getConfiguration().get).mockImplementation((_k: string, d?: unknown) => d);
+    vi.mocked(visualPlanService.get).mockReturnValue(failed);
+  });
+
+  it('retry replaces the failed plan with a new one for the same goal and source', async () => {
+    vi.mocked(visualPlanService.createPendingPlan).mockResolvedValue({ ...failed, id: 'plan-new', status: 'generating' });
+    await handleAgenticKanbanMessage({ type: 'visualPlan:retry', planId: 'plan-old' }, store, {} as vscode.Uri, webview);
+    expect(visualPlanStore.delete).toHaveBeenCalledWith('plan-old');
+    expect(visualPlanService.createPendingPlan).toHaveBeenCalledWith({ goal: 'Build the core loop', sourceArtifactId: 'S-9' });
+    expect(vi.mocked(openChatWithResult).mock.calls[0][0]!.query).toContain('plan-new.plan.json');
+  });
+
+  it('delete removes the plan only after the user confirms', async () => {
+    await handleAgenticKanbanMessage({ type: 'visualPlan:delete', planId: 'plan-old' }, store, {} as vscode.Uri, webview);
+    expect(visualPlanStore.delete).not.toHaveBeenCalled();
+    vi.mocked(vscode.window.showWarningMessage).mockResolvedValueOnce('Delete' as never);
+    await handleAgenticKanbanMessage({ type: 'visualPlan:delete', planId: 'plan-old' }, store, {} as vscode.Uri, webview);
+    expect(visualPlanStore.delete).toHaveBeenCalledWith('plan-old');
   });
 });

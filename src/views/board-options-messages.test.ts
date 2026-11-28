@@ -94,6 +94,27 @@ describe('board option messages', () => {
     expect(settings.has('agents.baseBranch')).toBe(false);
   });
 
+  it('offers branches only on origin, and picking one makes a local copy that tracks it', async () => {
+    // A clone of this repo whose origin has a branch the clone has never checked out.
+    const clone = fs.mkdtempSync(path.join(os.tmpdir(), 'board-clone-'));
+    cp.execFileSync('git', ['branch', 'release/2.0'], { cwd: repo, stdio: 'ignore' });
+    cp.execFileSync('git', ['clone', '-q', repo, clone], { stdio: 'ignore' });
+    (vscode.workspace as { workspaceFolders: unknown }).workspaceFolders = [{ uri: { fsPath: clone } }];
+    try {
+      await send({ type: 'harness:getStatus' });
+      expect(lastStatus()?.remoteBranches).toEqual(expect.arrayContaining(['release/2.0', 'develop']));
+      expect(lastStatus()?.remoteBranches).not.toContain('feature-x'); // already local
+      await send({ type: 'harness:setBaseBranch', branch: 'release/2.0' });
+      expect(settings.get('agents.baseBranch')).toBe('release/2.0');
+      const upstream = cp.execFileSync('git', ['rev-parse', '--abbrev-ref', 'release/2.0@{upstream}'], { cwd: clone }).toString().trim();
+      expect(upstream).toBe('origin/release/2.0');
+      expect(lastStatus()?.branches).toContain('release/2.0');
+      expect(lastStatus()?.remoteBranches).not.toContain('release/2.0');
+    } finally {
+      fs.rmSync(clone, { recursive: true, force: true });
+    }
+  });
+
   it('saves where cards run, delivery and agent as your defaults, but not permissions', async () => {
     await send({ type: 'harness:setIsolation', isolation: 'none' });
     await send({ type: 'harness:setDelivery', delivery: 'pr' });

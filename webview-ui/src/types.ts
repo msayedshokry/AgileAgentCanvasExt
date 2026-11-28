@@ -42,6 +42,7 @@ export type ArtifactStatus =
   | 'review'
   | 'ready-for-review'
   | 'blocked'
+  | 'failed'
   | 'complete'
   | 'completed'
   | 'approved'
