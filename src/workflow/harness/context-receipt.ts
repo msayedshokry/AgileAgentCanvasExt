@@ -14,7 +14,7 @@
 import { createHash } from 'crypto';
 import type { HarnessId } from './harness-adapters';
 
-export type ReceiptKind = 'run-prompt' | 'workflow-definition' | 'project-context' | 'card' | 'instruction-file';
+export type ReceiptKind = 'run-prompt' | 'workflow-definition' | 'project-context' | 'project-memory' | 'card' | 'instruction-file';
 export type ReceiptDelivery = 'inline' | 'discovered' | 'resumed';
 
 export interface ReceiptItem {
@@ -53,6 +53,8 @@ export interface ReceiptInput {
   readonly workflowId: string;
   readonly skillContent?: string;
   readonly projectContext?: string;
+  /** The project-memory section of the brief (project-memory.ts). */
+  readonly projectMemory?: string;
   readonly artifactJson: string;
   /** Reads a file relative to the run's working directory; undefined when absent. */
   readonly readFile: (relPath: string) => string | undefined;
@@ -66,6 +68,7 @@ export function buildContextReceipt(input: ReceiptInput): ReceiptItem[] {
   ];
   if (input.skillContent) items.push(item('workflow-definition', input.workflowId, input.skillContent, briefDelivery));
   if (input.projectContext) items.push(item('project-context', 'project context', input.projectContext, briefDelivery));
+  if (input.projectMemory) items.push(item('project-memory', 'project memory', input.projectMemory, briefDelivery));
   for (const file of AUTO_LOADED_FILES[input.harness] ?? []) {
     const text = input.readFile(file);
     if (text !== undefined) items.push(item('instruction-file', file, text, 'discovered'));

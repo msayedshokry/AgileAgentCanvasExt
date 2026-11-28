@@ -39,6 +39,25 @@ describe('planBoardEffects', () => {
       .toEqual([{ type: 'note', author: 'Board', text: "Ignored from Claude Code's verdict: 2 questions over the limit of 3." }]);
   });
 
+  it('sends verdict memory, final notes and an unexplained BLOCKED to project memory', () => {
+    const effects = planBoardEffects({
+      verdict: v({ questions: [], proposals: [], notes: 'Used rules.ts', memory: ['Use pnpm.'] }, { verdict: 'BLOCKED', summary: 'npm is blocked by the sandbox' }),
+      agent: dev, fallbackAuthor: 'x', roster, final: true,
+    });
+    expect(effects.at(-1)).toEqual({ type: 'remember', entries: [
+      { kind: 'lesson', author: 'Dev', text: 'Use pnpm.' },
+      { kind: 'note', author: 'Dev', text: 'Used rules.ts' },
+      { kind: 'failure', author: 'Dev', text: 'Blocked: npm is blocked by the sandbox' },
+    ] });
+  });
+
+  it('keeps live progress notes and BLOCKED-with-questions out of project memory', () => {
+    expect(planBoardEffects({ verdict: v({ questions: [], proposals: [], notes: 'Half done' }), agent: dev, fallbackAuthor: 'x', roster })
+      .some((e) => e.type === 'remember')).toBe(false);
+    expect(planBoardEffects({ verdict: v({ questions: ['8 or 12?'], proposals: [] }, { verdict: 'BLOCKED', summary: 'Need an answer' }), agent: dev, fallbackAuthor: 'x', roster, final: true })
+      .some((e) => e.type === 'remember')).toBe(false);
+  });
+
   it('does nothing for a plain verdict', () => {
     expect(planBoardEffects({ verdict: { verdict: 'COMPLETED' }, agent: dev, fallbackAuthor: 'x', roster })).toEqual([]);
   });

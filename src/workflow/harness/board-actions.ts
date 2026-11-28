@@ -5,6 +5,7 @@
 //   board.proposals  — new cards the agent thinks are needed (→ approval)
 //   board.handoff    — the agent who should take this card next
 //   board.notes      — what the next agent on this card should know
+//   board.memory     — lessons for every agent on the board (project-memory.ts)
 // and the lead agent plans through a `lead` block (D5). Everything here is
 // untrusted model output: it is shape-checked and length-capped before any of
 // it reaches the board, and what is dropped is reported, never silent. Pure.
@@ -15,6 +16,8 @@ export const LIMITS = {
   leadStories: 12,
   leadAssignments: 12,
   notesChars: 2000,
+  memory: 3,
+  memoryChars: 500,
   textChars: 4000,
   titleChars: 200,
   acceptanceItems: 10,
@@ -28,6 +31,8 @@ export interface BoardActions {
   readonly proposals: readonly BoardProposal[];
   readonly handoff?: BoardHandoff;
   readonly notes?: string;
+  /** Lessons worth remembering beyond this card. */
+  readonly memory?: readonly string[];
 }
 
 export interface LeadStory { readonly ref: string; readonly title: string; readonly description?: string; readonly acceptance?: readonly string[] }
@@ -97,7 +102,14 @@ export function sanitizeBoardActions(raw: unknown): Sanitized<BoardActions> {
   }
 
   const notes = text(obj.notes, LIMITS.notesChars);
-  return { value: { questions, proposals, ...(handoff ? { handoff } : {}), ...(notes ? { notes } : {}) }, dropped };
+  const memory = capped(
+    list(obj.memory).map((m) => text(m, LIMITS.memoryChars)).filter((m): m is string => !!m),
+    LIMITS.memory, 'memory items', dropped,
+  );
+  return {
+    value: { questions, proposals, ...(handoff ? { handoff } : {}), ...(notes ? { notes } : {}), ...(memory.length ? { memory } : {}) },
+    dropped,
+  };
 }
 
 export function sanitizeLeadPlan(raw: unknown): Sanitized<LeadPlan | undefined> {
@@ -134,5 +146,5 @@ export function sanitizeLeadPlan(raw: unknown): Sanitized<LeadPlan | undefined> 
 
 /** True when the agent asked the board for anything. */
 export function hasBoardActions(a: BoardActions): boolean {
-  return a.questions.length > 0 || a.proposals.length > 0 || !!a.handoff || !!a.notes;
+  return a.questions.length > 0 || a.proposals.length > 0 || !!a.handoff || !!a.notes || !!a.memory?.length;
 }

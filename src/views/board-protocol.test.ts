@@ -89,6 +89,26 @@ describe('applyAgentVerdict', () => {
     expect(notes(ctx.cards).at(-1)).toMatchObject({ author: 'Dev', text: 'Handed off to Reviewer: check errors' });
   });
 
+  it('adds a final verdict\'s lessons and notes to project memory, scoped to the card and its epic', async () => {
+    const remember = vi.fn();
+    ctx = makeDeps({ remember });
+    await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'w', agent: dev, verdict: verdict({ questions: [], proposals: [], notes: 'Used rules.ts', memory: ['Use pnpm.'] }) });
+    expect(remember).toHaveBeenCalledWith([
+      { date: '2026-11-25', kind: 'lesson', author: 'Dev', text: 'Use pnpm.', epicId: 'E-1', cardId: 'S-1' },
+      { date: '2026-11-25', kind: 'note', author: 'Dev', text: 'Used rules.ts', epicId: 'E-1', cardId: 'S-1' },
+    ]);
+  });
+
+  it('keeps live progress notes out of project memory, and survives a memory write failure', async () => {
+    const remember = vi.fn(() => { throw new Error('disk full'); });
+    ctx = makeDeps({ remember });
+    await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'live', agent: dev, verdict: verdict({ questions: [], proposals: [], notes: 'Half done' }) });
+    expect(remember).not.toHaveBeenCalled();
+    await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'w', agent: dev, verdict: verdict({ questions: [], proposals: [], notes: 'Done' }) });
+    expect(remember).toHaveBeenCalledTimes(1);
+    expect(notes(ctx.cards).map((n) => n.text)).toEqual(['Half done', 'Done']);
+  });
+
   it('keeps going when one effect fails', async () => {
     ctx = makeDeps({ propose: () => { throw new Error('boom'); } });
     await applyAgentVerdict(ctx.deps, { artifactId: 'S-1', workflowId: 'w', agent: dev, verdict: verdict({ questions: ['q?'], proposals: [{ title: 'x' }], notes: 'n' }) });

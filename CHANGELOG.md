@@ -14,6 +14,15 @@ Board runs stop when stuck rather than on a fixed timer, retry only failures tha
 - With Claude Code, a card back for rework resumes its previous conversation and sends only the new instructions and fix requests. A run that ended without a verdict is never resumed. Turn this off with `agents.resumeSessions`.
 - Each run in a card's timeline lists the context it received: name, size and how it was delivered, without the content.
 
+### Feature: Project memory for board agents
+
+Agents now remember across cards what the board learned, with every agent CLI and in every card worktree.
+
+- The board keeps a project memory file in the output folder: your answers to agent questions, lessons agents choose to save, the final notes of finished cards, and why a run was blocked. Live progress notes stay on their card.
+- Every run's brief gets your pinned rules, recent project-wide decisions and lessons, and recent news from its own epic. Earlier runs' entries are marked as information, not instructions.
+- Agents save lessons with a `"memory"` list in their verdict. Claude Code and Codex can also call `board_recall` to search memory and `board_remember` to save to it.
+- The file is plain markdown. Delete a line to forget it; bullets you write under **Pinned** go into every brief.
+
 ### Feature: Autopilots
 
 Run recurring agent work on a schedule while VS Code is open.

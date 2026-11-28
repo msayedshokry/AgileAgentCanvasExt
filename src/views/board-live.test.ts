@@ -30,6 +30,22 @@ function setup(over: Partial<BoardLiveDeps> = {}) {
   return { deps, applied, notified, dismissed, card };
 }
 
+describe('runBoardTool: project memory', () => {
+  it('searches and saves through the memory deps, as the running agent', async () => {
+    const saved: string[][] = [];
+    const { deps } = setup({ memory: { recall: (q) => (q === 'pnpm' ? ['- 2026-11-27 [lesson] Dev: Use pnpm.'] : []), remember: (...a) => { saved.push(a); } } });
+    expect((await runBoardTool(deps, scope, 'board_recall', { query: 'pnpm' })).text).toBe('- 2026-11-27 [lesson] Dev: Use pnpm.');
+    expect((await runBoardTool(deps, scope, 'board_recall', { query: 'yarn' })).text).toContain('Nothing in project memory');
+    expect((await runBoardTool(deps, scope, 'board_remember', { text: 'Use pnpm.' })).ok).toBe(true);
+    expect(saved).toEqual([['S-1', 'Dev', 'Use pnpm.']]);
+  });
+
+  it('says so when there is no project memory', async () => {
+    const { deps } = setup();
+    expect(await runBoardTool(deps, scope, 'board_recall', { query: 'x' })).toMatchObject({ ok: false });
+  });
+});
+
 describe('runBoardTool', () => {
   it('reads the card and its epic', async () => {
     const { deps } = setup();

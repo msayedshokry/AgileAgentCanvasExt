@@ -62,6 +62,25 @@ export function setEpicContextResolver(resolver: EpicContextResolver | undefined
   epicContextOf = resolver;
 }
 
+/** The project-memory section for a card's brief (views/board-protocol.ts registers it). */
+export type ProjectMemoryResolver = (cardId: string) => string | undefined;
+let projectMemoryOf: ProjectMemoryResolver | undefined;
+
+export function setProjectMemoryResolver(resolver: ProjectMemoryResolver | undefined): void {
+  projectMemoryOf = resolver;
+}
+
+/** Never throws: a broken memory file must not stop a run. */
+function memoryFor(cardId: string | undefined): string | undefined {
+  if (!cardId) return undefined;
+  try {
+    return projectMemoryOf?.(cardId);
+  } catch (err) {
+    logger.warn(`[TerminalExecutor] Could not read project memory for ${cardId}: ${errMsg(err)}`);
+    return undefined;
+  }
+}
+
 /** Every finished run's verdict, with the agent that ran it (see views/board-protocol.ts). */
 export interface AgentVerdictEvent {
   readonly artifactId: string;
@@ -532,7 +551,7 @@ export class TerminalExecutor implements vscode.Disposable {
   /** The agent brief for this run (harness/agent-brief.ts); the short form when resuming. */
   private briefFor(
     artifact: HarnessArtifact, agent: TeamAgent | undefined, cliLabel: string, model: string | undefined,
-    resumed: boolean, outputFolder: string, workspaceDir: string | undefined, liveTools = false,
+    resumed: boolean, outputFolder: string, workspaceDir: string | undefined, liveTools = false, memory?: string,
   ): string {
     let roster: readonly TeamAgent[] = [];
     try { roster = readAgentTeam(getOutputFolder()).team.agents; } catch { /* no output folder yet */ }
@@ -540,7 +559,7 @@ export class TerminalExecutor implements vscode.Disposable {
     try { epicContext = artifact?.id ? epicContextOf?.(String(artifact.id)) : undefined; } catch (err) {
       logger.warn(`[TerminalExecutor] Could not read the epic context for ${String(artifact?.id)}: ${errMsg(err)}`);
     }
-    const input = { agent, cliLabel, model, roster, notes: readAgentNotes(artifact), skills: this.skillsFor(agent, outputFolder, workspaceDir), liveTools, epicContext };
+    const input = { agent, cliLabel, model, roster, notes: readAgentNotes(artifact), skills: this.skillsFor(agent, outputFolder, workspaceDir), liveTools, epicContext, memory };
     return resumed ? buildResumeBrief(input) : buildAgentBrief(input);
   }
 
@@ -696,7 +715,8 @@ export class TerminalExecutor implements vscode.Disposable {
     const resumed = sessionPlan?.resume === true;
     const projectContext = resumed ? undefined : withCodeGraphHint(loadProjectContext(outputFolder), workspaceDir, options?.cwd);
     const board = await this.prepareBoardLive(adapter, sessionId, artifactId, assignee, outputFolder);
-    const brief = this.briefFor(artifact, assignee, adapter.label, assignee?.harness === adapter.id ? assignee.model : undefined, resumed, outputFolder, options?.cwd ?? workspaceDir, !!board);
+    const memory = resumed ? undefined : memoryFor(artifact?.id ? String(artifact.id) : undefined);
+    const brief = this.briefFor(artifact, assignee, adapter.label, assignee?.harness === adapter.id ? assignee.model : undefined, resumed, outputFolder, options?.cwd ?? workspaceDir, !!board, memory);
     const prompt = resumed
       ? buildResumePrompt(workflowId, artifact, outputFolder, sessionId, brief, options?.turnContext)
       : buildTerminalPrompt(workflowId, artifact, outputFolder, options?.skillContent, sessionId, projectContext, brief);
@@ -704,6 +724,7 @@ export class TerminalExecutor implements vscode.Disposable {
       harness: provider, prompt, resumed, workflowId,
       skillContent: options?.skillContent,
       projectContext,
+      projectMemory: memory,
       artifactJson: JSON.stringify(artifact ?? {}),
       readFile: (rel) => {
         const dir = options?.cwd ?? workspaceDir;

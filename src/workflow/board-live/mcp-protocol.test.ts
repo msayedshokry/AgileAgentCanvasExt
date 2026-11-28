@@ -16,6 +16,7 @@ describe('handleRpc', () => {
     const res = await handleRpc({ id: 2, method: 'tools/list' }, ok) as { result: { tools: typeof BOARD_TOOLS } };
     expect(res.result.tools.map((t) => t.name)).toEqual([
       'board_get_card', 'board_list_epic', 'board_note', 'board_ask', 'board_propose', 'board_check_messages', 'board_handoff',
+      'board_recall', 'board_remember',
     ]);
     for (const t of res.result.tools) expect(t.inputSchema).toMatchObject({ type: 'object' });
   });

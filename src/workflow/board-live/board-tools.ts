@@ -60,6 +60,16 @@ export const BOARD_TOOLS: readonly BoardTool[] = [
     description: 'Name the agent who should take your card next (by agent id from your brief), with a note for them.',
     inputSchema: obj({ to: text('Agent id.', 80), note: text('What they should know.', 4000) }, ['to']),
   },
+  {
+    name: 'board_recall',
+    description: "Search the board's project memory: the user's earlier decisions, lessons other agents saved, and how earlier cards ended. Ask before guessing a convention or re-deciding something.",
+    inputSchema: obj({ query: text('What you want to know, in a few words.', 200) }, ['query']),
+  },
+  {
+    name: 'board_remember',
+    description: 'Save a lesson every later agent on this board should know (a convention, a trap, a decision). Not for progress on your card: use board_note for that.',
+    inputSchema: obj({ text: text('The lesson, in one or two sentences.', 500) }, ['text']),
+  },
 ];
 
 export function findBoardTool(name: string): BoardTool | undefined {

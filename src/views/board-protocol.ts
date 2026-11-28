@@ -8,10 +8,11 @@
 import * as vscode from 'vscode';
 import type { ArtifactStore } from '../state/artifact-store';
 import type { ArtifactChanges } from '../types';
-import { agentVerdicts, setEpicContextResolver, terminalExecutor, type AgentVerdictEvent } from '../workflow/terminal-executor';
+import { agentVerdicts, setEpicContextResolver, setProjectMemoryResolver, terminalExecutor, type AgentVerdictEvent } from '../workflow/terminal-executor';
 import { liveQuestions, registerBoardLive } from './board-live';
 import { normalizeQuestion } from '../workflow/board-live/live-questions';
-import { answerFollowUp, appendNote, planBoardEffects, type BoardEffect } from '../workflow/harness/board-effects';
+import { answerFollowUp, appendNote, LIVE_WORKFLOW, planBoardEffects, type BoardEffect, type MemoryNote } from '../workflow/harness/board-effects';
+import { loadMemory, memoryEntry, memoryForBrief, rememberEntries, searchMemory, type MemoryEntry } from '../workflow/harness/project-memory';
 import { readAgentNotes, type AgentNote } from '../workflow/harness/agent-brief';
 import { readEpicContext, validateEpicContext, type EpicContext } from '../workflow/harness/epic-context';
 import { assignedAgent, capacityOf, isPerson, readAgentTeam, withAssignment, writeAgentTeam, type AgentTeam } from '../workflow/harness/agent-team';
@@ -40,6 +41,8 @@ export interface BoardProtocolDeps {
   /** Approve every story of a proposal and turn them into cards. */
   readonly approveAll: (goalId: string) => Promise<void>;
   readonly now: () => Date;
+  /** Adds entries to project memory (project-memory.ts). */
+  readonly remember?: (entries: readonly MemoryEntry[]) => void;
 }
 
 /** The epic a card belongs to: itself when it is an epic, else the epic holding it. */
@@ -80,6 +83,24 @@ async function addNote(deps: BoardProtocolDeps, cardId: string, author: string, 
   await deps.store.updateArtifact(found.type, cardId, { metadata: { agentNotes: appendNote(readAgentNotes(found.artifact), note) } } as ArtifactChanges);
 }
 
+/** Add to project memory, scoped to the card and its epic. Never throws: memory is a help, not a gate. */
+export function rememberFor(deps: Pick<BoardProtocolDeps, 'store' | 'now' | 'remember'>, cardId: string, notes: readonly MemoryNote[]): void {
+  if (!deps.remember || notes.length === 0) return;
+  try {
+    const date = deps.now().toISOString();
+    const epicId = epicOf(deps.store, cardId);
+    const entries = notes.flatMap((n) => memoryEntry({ ...n, date, cardId, ...(epicId ? { epicId } : {}) }) ?? []);
+    deps.remember(entries);
+  } catch (err) {
+    logger.warn(`[BoardProtocol] Could not add to project memory for ${cardId}: ${errMsg(err)}`);
+  }
+}
+
+/** The project-memory section of a card's brief. */
+export function memoryBriefFor(store: Pick<ArtifactStore, 'getEpics'>, outputFolder: string, cardId: string): string | undefined {
+  return memoryForBrief(loadMemory(outputFolder), { cardId, epicId: epicOf(store, cardId) });
+}
+
 async function applyEffect(deps: BoardProtocolDeps, cardId: string, effect: BoardEffect): Promise<void> {
   switch (effect.type) {
     case 'note':
@@ -116,13 +137,19 @@ async function applyEffect(deps: BoardProtocolDeps, cardId: string, effect: Boar
       deps.writeTeam(withAssignment(deps.readTeam(), cardId, effect.to.id));
       await addNote(deps, cardId, effect.from, `Handed off to ${effect.to.name}${effect.note ? `: ${effect.note}` : '.'}`);
       return;
+    case 'remember':
+      rememberFor(deps, cardId, effect.entries);
+      return;
   }
 }
 
 /** Apply one finished run's board requests. Never throws: a failed effect is logged and noted. */
 export async function applyAgentVerdict(deps: BoardProtocolDeps, evt: AgentVerdictEvent): Promise<void> {
   const fallbackAuthor = getHarnessAdapter(evt.agent?.harness ?? '')?.label ?? 'The agent';
-  const effects = planBoardEffects({ verdict: evt.verdict, agent: evt.agent, fallbackAuthor, roster: deps.readTeam().agents });
+  const effects = planBoardEffects({
+    verdict: evt.verdict, agent: evt.agent, fallbackAuthor, roster: deps.readTeam().agents,
+    final: evt.workflowId !== LIVE_WORKFLOW,
+  });
   for (const effect of effects) {
     try {
       await applyEffect(deps, evt.artifactId, effect);
@@ -136,6 +163,9 @@ export async function applyAgentVerdict(deps: BoardProtocolDeps, evt: AgentVerdi
 export async function answerQuestions(store: ArtifactStore, cardId: string, answer: string, post: (m: Record<string, unknown>) => void): Promise<boolean> {
   const item = needsYouList().find((i) => i.artifactId === cardId && i.kind === 'question');
   if (!item || !answer.trim()) return false;
+  // The user's answer is a decision every later agent should know.
+  const asked = (item.details ?? []).join(' / ');
+  rememberFor(defaultDeps(store), cardId, [{ kind: 'decision', author: 'You', text: `${asked ? `Q: ${asked} A: ` : ''}${answer.trim()}` }]);
   // An agent still waiting in board_ask gets the answer in its current run.
   if (liveQuestions.answer(cardId, answer.trim())) {
     await addNote(defaultDeps(store), cardId, 'You', answer.trim());
@@ -162,6 +192,7 @@ function defaultDeps(store: ArtifactStore): BoardProtocolDeps {
       await goalDecomposer.dispatch(goalId);
     },
     now: () => new Date(),
+    remember: (entries) => { rememberEntries(getOutputFolder(), entries); },
   };
 }
 
@@ -213,10 +244,17 @@ export function registerBoardProtocol(context: vscode.ExtensionContext, store: A
     notifyQuestion: (cardId, reason, questions) => notifyNeedsYou(cardId, 'question', reason, { details: questions }),
     dismiss: (cardId) => dismissNeedsYou(cardId),
     takeMessages: (cardId) => followUpSender(store).takeForRun(cardId),
+    memory: {
+      recall: (query) => searchMemory(loadMemory(getOutputFolder()), query),
+      remember: (cardId, author, text) => rememberFor(deps, cardId, [{ kind: 'lesson', author, text }]),
+    },
   }, (cardId) => terminalExecutor.noteActivity(cardId));
   // Context the user attached to the card's epic goes into every run's brief (L9).
   setEpicContextResolver((cardId) => epicContextFor(store, cardId));
   context.subscriptions.push({ dispose: () => setEpicContextResolver(undefined) });
+  // What earlier runs learned (project-memory.md) goes into every run's brief too.
+  setProjectMemoryResolver((cardId) => memoryBriefFor(store, getOutputFolder(), cardId));
+  context.subscriptions.push({ dispose: () => setProjectMemoryResolver(undefined) });
   // Capacity: the orchestrator asks which agent a card runs on, and how many runs it may have.
   setAgentResolver((cardId) => {
     const agent = assignedAgent(deps.readTeam(), cardId);

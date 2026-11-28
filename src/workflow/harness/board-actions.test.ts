@@ -19,6 +19,15 @@ describe('sanitizeBoardActions', () => {
     expect(hasBoardActions(value)).toBe(true);
   });
 
+  it('reads up to the limit of memory lessons, trimmed and capped', () => {
+    const { value, dropped } = sanitizeBoardActions({ memory: [' Use pnpm. ', 7, '', 'y'.repeat(900), 'c', 'd'] });
+    expect(value.memory).toHaveLength(LIMITS.memory);
+    expect(value.memory?.[0]).toBe('Use pnpm.');
+    expect(value.memory?.[1]).toHaveLength(LIMITS.memoryChars);
+    expect(dropped).toEqual(['1 memory items over the limit of 3']);
+    expect(hasBoardActions(value)).toBe(true);
+  });
+
   it('treats a missing block as no actions', () => {
     expect(sanitizeBoardActions(undefined)).toEqual({ value: NO_BOARD_ACTIONS, dropped: [] });
     expect(hasBoardActions(NO_BOARD_ACTIONS)).toBe(false);

@@ -10,6 +10,7 @@ import type { ArtifactStore } from '../state/artifact-store';
 import { BoardLiveServer, type RunScope, type ToolResult } from '../workflow/board-live/board-server';
 import { ASK_WAIT_MS, LiveQuestions } from '../workflow/board-live/live-questions';
 import { sanitizeBoardActions } from '../workflow/harness/board-actions';
+import { LIVE_WORKFLOW } from '../workflow/harness/board-effects';
 import { readAgentNotes } from '../workflow/harness/agent-brief';
 import type { AgentTeam } from '../workflow/harness/agent-team';
 import type { AgentVerdictEvent } from '../workflow/terminal-executor';
@@ -31,6 +32,11 @@ export interface BoardLiveDeps {
   readonly takeMessages: (cardId: string) => string[];
   readonly questions: LiveQuestions;
   readonly askWaitMs?: number;
+  /** Project memory (workflow/harness/project-memory.ts); absent when there is no output folder. */
+  readonly memory?: {
+    recall(query: string): string[];
+    remember(cardId: string, author: string, text: string): void;
+  };
 }
 
 function epicIdOf(store: BoardLiveDeps['store'], cardId: string): string | undefined {
@@ -47,7 +53,7 @@ export async function runBoardTool(deps: BoardLiveDeps, scope: RunScope, tool: s
   const who = agent?.name ?? scope.agentName ?? 'The agent';
   const viaBoard = async (board: unknown) => {
     const { value, dropped } = sanitizeBoardActions(board);
-    await deps.apply({ artifactId: scope.cardId, workflowId: 'live', agent, verdict: { verdict: 'COMPLETED', board: value, ...(dropped.length ? { boardDropped: [...dropped] } : {}) } });
+    await deps.apply({ artifactId: scope.cardId, workflowId: LIVE_WORKFLOW, agent, verdict: { verdict: 'COMPLETED', board: value, ...(dropped.length ? { boardDropped: [...dropped] } : {}) } });
     return dropped;
   };
   try {
@@ -81,6 +87,16 @@ export async function runBoardTool(deps: BoardLiveDeps, scope: RunScope, tool: s
         return last?.author === 'Board'
           ? { ok: false, text: last.text }
           : { ok: true, text: `The card goes to ${String(args.to)} next.` };
+      }
+      case 'board_recall': {
+        if (!deps.memory) return { ok: false, text: 'Project memory is not available in this workspace.' };
+        const hits = deps.memory.recall(String(args.query));
+        return { ok: true, text: hits.length ? hits.join('\n') : 'Nothing in project memory matches that.' };
+      }
+      case 'board_remember': {
+        if (!deps.memory) return { ok: false, text: 'Project memory is not available in this workspace.' };
+        deps.memory.remember(scope.cardId, who, String(args.text));
+        return { ok: true, text: 'Saved to project memory. Later agents on this board will see it.' };
       }
       case 'board_check_messages': {
         const messages = deps.takeMessages(scope.cardId);

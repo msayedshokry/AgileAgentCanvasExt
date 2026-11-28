@@ -96,6 +96,14 @@ describe('epic context in the brief', () => {
     expect(brief).toContain('- `docs/auth.md`');
   });
 
+  it('puts project memory after the precedence rules and before the card notes, and teaches the memory field', () => {
+    const brief = buildAgentBrief({ ...input, memory: '### Project memory\n- 2026-11-27 [lesson] Dev: Use pnpm.\n\n' });
+    const at = brief.indexOf('### Project memory');
+    expect(at).toBeGreaterThan(brief.indexOf('### Instruction precedence'));
+    expect(at).toBeLessThan(brief.indexOf('### Notes on this card'));
+    expect(brief).toContain('`"memory"`');
+  });
+
   it('leaves it out when the epic has none, and marks people on the team', () => {
     const brief = buildAgentBrief({ ...input, roster: [dev, { id: 'maya', name: 'Maya', harness: '', kind: 'person' as const }] });
     expect(brief).not.toContain('Context for this epic');
