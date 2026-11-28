@@ -53,32 +53,66 @@ export interface AgentStatusMessage {
   delivery: 'merge' | 'pr';
   /** The workspace's current git branch; absent outside a git repository. */
   branch?: string;
+  /** The workspace folder is a git repository (cards can get their own branch). */
+  isGit: boolean;
+  /** The GitHub CLI is installed (needed to open pull requests). */
+  hasGh: boolean;
+  /** The branch cards start from and land on; absent means the checked-out branch. */
+  baseBranch?: string;
+  /** Local branches to pick a start branch from (at most 50). */
+  branches: string[];
 }
 
-/** The checked-out branch of the first workspace folder, or undefined. */
-async function currentBranch(): Promise<string | undefined> {
+interface GitFacts { isGit: boolean; branch?: string; branches: string[]; hasGh: boolean }
+
+/** What the board needs to know about git and gh for its option chips. */
+async function gitFacts(): Promise<GitFacts> {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!root) return undefined;
-  try {
-    const out = await execTool('git', ['rev-parse', '--abbrev-ref', 'HEAD'], root);
-    const name = out.code === 0 ? out.stdout.trim() : '';
-    return name && name !== 'HEAD' ? name : undefined;
-  } catch {
-    return undefined;
-  }
+  const run = async (tool: string, args: string[]) => {
+    try { return await execTool(tool, args, root); } catch { return { code: 1, stdout: '', stderr: '' }; }
+  };
+  const [inside, head, list, gh] = await Promise.all([
+    root ? run('git', ['rev-parse', '--is-inside-work-tree']) : Promise.resolve({ code: 1, stdout: '', stderr: '' }),
+    root ? run('git', ['rev-parse', '--abbrev-ref', 'HEAD']) : Promise.resolve({ code: 1, stdout: '', stderr: '' }),
+    root ? run('git', ['for-each-ref', '--count=50', '--sort=-committerdate', '--format=%(refname:short)', 'refs/heads']) : Promise.resolve({ code: 1, stdout: '', stderr: '' }),
+    run('gh', ['--version']),
+  ]);
+  const isGit = inside.code === 0 && inside.stdout.trim() === 'true';
+  const name = head.code === 0 ? head.stdout.trim() : '';
+  return {
+    isGit,
+    ...(isGit && name && name !== 'HEAD' ? { branch: name } : {}),
+    branches: isGit && list.code === 0 ? list.stdout.split(/\r?\n/).map((b) => b.trim()).filter(Boolean) : [],
+    hasGh: gh.code === 0,
+  };
 }
 
-function boardOptions(): Pick<AgentStatusMessage, 'isolation' | 'delivery'> {
+function boardOptions(): Pick<AgentStatusMessage, 'isolation' | 'delivery' | 'baseBranch'> {
   const config = vscode.workspace.getConfiguration(CONFIG);
+  const baseBranch = (config.get<string>('agents.baseBranch', '') ?? '').trim();
   return {
     isolation: config.get<string>('agents.isolation', 'worktree') === 'none' ? 'none' : 'worktree',
     delivery: config.get<boolean>('agents.openPullRequests', false) ? 'pr' : 'merge',
+    ...(baseBranch ? { baseBranch } : {}),
   };
+}
+
+/** Settings a person can carry to new projects. Permissions and the start branch stay per project. */
+const DEFAULTABLE = ['agents.isolation', 'agents.openPullRequests', 'agents.harness'] as const;
+
+/** Save this project's choices as the user-level defaults new projects start from. */
+async function saveDefaults(): Promise<void> {
+  const config = vscode.workspace.getConfiguration(CONFIG);
+  for (const key of DEFAULTABLE) {
+    const value = config.inspect(key)?.workspaceValue;
+    if (value !== undefined) await config.update(key, value, vscode.ConfigurationTarget.Global);
+  }
+  void vscode.window.showInformationMessage('Saved as your defaults: where cards run, what approving does, and the agent. Permissions stay per project.');
 }
 
 async function buildAgentStatus(): Promise<AgentStatusMessage> {
   clearHarnessPathCache();
-  const [harnesses, resolution, branch] = await Promise.all([
+  const [harnesses, resolution, git] = await Promise.all([
     probeReadiness({
       isOnPath: (b) => isOnPathCached(b),
       run: runProbe,
@@ -86,7 +120,7 @@ async function buildAgentStatus(): Promise<AgentStatusMessage> {
       aiderConfigHasApiBase: () => aiderConfigHasApiBase(),
     }),
     resolveBoardHarness(),
-    currentBranch(),
+    gitFacts(),
   ]);
   const resolved: AgentStatusMessage['resolved'] =
     resolution.kind === 'cli' ? { kind: 'cli', id: resolution.adapter.id, label: resolution.adapter.label, reason: resolution.reason }
@@ -100,7 +134,7 @@ async function buildAgentStatus(): Promise<AgentStatusMessage> {
   }
   return {
     type: 'harness:status', harnesses, configured: getConfiguredHarness(), posture: getPermissionPosture(), resolved, blocker,
-    ...boardOptions(), ...(branch ? { branch } : {}),
+    ...boardOptions(), ...git,
   };
 }
 
@@ -324,7 +358,7 @@ async function addressReview(artifactId: string, store: ArtifactStore, post: Pos
 // ── Router ───────────────────────────────────────────────────────────────────
 
 const HANDLED = new Set([
-  'harness:getStatus', 'harness:select', 'harness:setPosture', 'harness:setIsolation', 'harness:setDelivery', 'harness:signIn', 'harness:install', 'harness:smoke', 'harness:pick',
+  'harness:getStatus', 'harness:select', 'harness:setPosture', 'harness:setIsolation', 'harness:setDelivery', 'harness:setBaseBranch', 'harness:saveDefaults', 'harness:signIn', 'harness:install', 'harness:smoke', 'harness:pick',
   'kanban:fixAction', 'kanban:previewPrompt', 'kanban:getRunTimeline', 'kanban:revertRun', 'kanban:showOutput', 'kanban:addressReview',
   'kanban:getInbox', 'kanban:dismissInbox',
 ]);
@@ -370,6 +404,18 @@ export async function handleAgentUxMessage(
         await postStatus(post);
         break;
       }
+      case 'harness:setBaseBranch': {
+        const name = typeof message.branch === 'string' ? message.branch.trim() : '';
+        // Only a real local branch name (or empty for "the checked-out one").
+        const ok = name === '' || (/^[\w./-]+$/.test(name) && (await gitFacts()).branches.includes(name));
+        if (ok) await vscode.workspace.getConfiguration(CONFIG).update('agents.baseBranch', name || undefined, vscode.ConfigurationTarget.Workspace);
+        await postStatus(post);
+        break;
+      }
+      case 'harness:saveDefaults':
+        await saveDefaults();
+        await postStatus(post);
+        break;
       // Every harness:* request answers with a status: the panel waits for one.
       case 'harness:signIn':
         if (harnessId) await startSignIn(harnessId);

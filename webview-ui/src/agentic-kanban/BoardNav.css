@@ -1,6 +1,6 @@
 /* Board sidebar: quiet list navigation. Active item = soft fill + ink, not a stripe. */
 .board-nav {
-  width: 232px;
+  width: 216px;
   flex-shrink: 0;
   min-height: 0;
   overflow-y: auto;

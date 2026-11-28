@@ -9,9 +9,9 @@
 .kanban-board,
 .agentic-kanban-board {
   display: grid;
-  grid-template-columns: repeat(5, minmax(232px, 1fr));
+  grid-template-columns: repeat(5, minmax(196px, 1fr));
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4);
   flex: 1;
   min-height: 0;
   overflow-x: auto;

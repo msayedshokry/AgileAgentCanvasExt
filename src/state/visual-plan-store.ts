@@ -39,6 +39,24 @@ function asString(v: unknown): string | undefined {
  * for missing fields so a slightly-off file still renders rather than being
  * dropped. Returns null only when the input isn't an object.
  */
+/** A plan waiting this long for its agent, with nothing written, was abandoned. */
+export const ABANDONED_PLAN_MS = 30 * 60_000;
+
+/**
+ * A plan stub still "generating" with no sections long after it was made: the
+ * agent that was to write it stopped. It reads as failed instead of spinning
+ * forever. Nothing is rewritten on disk.
+ */
+export function settleAbandonedPlan(plan: VisualPlan, nowMs = Date.now()): VisualPlan {
+  const abandoned = plan.status === 'generating' && plan.sections.length === 0 && nowMs - plan.updatedAt > ABANDONED_PLAN_MS;
+  return abandoned ? { ...plan, status: 'failed' } : plan;
+}
+
+/** A failed plan with no content has nothing to show on the canvas. */
+export function isEmptyFailedPlan(plan: VisualPlan): boolean {
+  return plan.status === 'failed' && plan.sections.length === 0;
+}
+
 function normalizePlan(raw: unknown, fallbackId: string): VisualPlan | null {
   if (!raw || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;
@@ -98,7 +116,7 @@ export class VisualPlanStore {
         try {
           const raw = await vscode.workspace.fs.readFile(vscode.Uri.file(path.join(dir, name)));
           const plan = normalizePlan(JSON.parse(raw.toString()), name.replace(/\.plan\.json$/, ''));
-          if (plan) this.plans.set(plan.id, plan);
+          if (plan) this.plans.set(plan.id, settleAbandonedPlan(plan));
         } catch (err) {
           logger.warn(`Failed to read plan file ${name}: ${errMsg(err)}`);
         }

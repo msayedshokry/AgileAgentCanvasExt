@@ -74,4 +74,41 @@ describe('card worktrees', { timeout: 30_000 }, () => {
     const wt = await prepareWorktree(git, repo, 'S-4', '.ctx');
     expect((await mergeWorktree(git, repo, wt, 'agent: done S-4')).kind).toBe('nothing-to-merge');
   });
+  it('starts a card from a chosen branch instead of the checked-out one', async () => {
+    await sh(['branch', 'develop']);
+    fs.writeFileSync(path.join(repo, 'main-only.txt'), 'x\n');
+    await sh(['add', '-A']);
+    await sh(['commit', '-q', '-m', 'main moves on']);
+    const wt = await prepareWorktree(git, repo, 'S-5', '.ctx', 'develop');
+    expect(fs.existsSync(path.join(wt.path, 'main-only.txt'))).toBe(false);
+    expect(fs.existsSync(path.join(wt.path, 'a.txt'))).toBe(true);
+  });
+
+  it('merges into the chosen branch without switching or changing your checkout', async () => {
+    await sh(['branch', 'develop']);
+    const wt = await prepareWorktree(git, repo, 'S-6', '.ctx', 'develop');
+    fs.writeFileSync(path.join(wt.path, 'feature.txt'), 'new\n');
+    const outcome = await mergeWorktree(git, repo, wt, 'agent: done S-6', 'develop');
+    expect(outcome.kind).toBe('merged');
+    expect(await sh(['rev-parse', '--abbrev-ref', 'HEAD'])).toBe('main');
+    expect(fs.existsSync(path.join(repo, 'feature.txt'))).toBe(false);
+    expect(await sh(['show', 'develop:feature.txt'])).toBe('new');
+    expect(await sh(['worktree', 'list'])).not.toContain('.merge-');
+  });
+
+  it('merges into the checked-out branch when the chosen branch is the one you are on', async () => {
+    const wt = await prepareWorktree(git, repo, 'S-7', '.ctx', 'main');
+    fs.writeFileSync(path.join(wt.path, 'f.txt'), 'f\n');
+    expect((await mergeWorktree(git, repo, wt, 'agent: done S-7', 'main')).kind).toBe('merged');
+    expect(fs.existsSync(path.join(repo, 'f.txt'))).toBe(true);
+  });
+
+  it('says so when the chosen branch is checked out in another worktree', async () => {
+    await sh(['branch', 'develop']);
+    await sh(['worktree', 'add', '-q', path.join(base, 'other'), 'develop']);
+    const wt = await prepareWorktree(git, repo, 'S-8', '.ctx', 'develop');
+    fs.writeFileSync(path.join(wt.path, 'g.txt'), 'g\n');
+    const outcome = await mergeWorktree(git, repo, wt, 'agent: done S-8', 'develop');
+    expect(outcome.kind).toBe('unavailable');
+  });
 });

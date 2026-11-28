@@ -25,6 +25,7 @@ import { AgentEditor } from './AgentEditor';
 import { assigneeFor, parseTeamMessage, EMPTY_TEAM_VIEW, type AgentTeamView } from './agent-team-view';
 import { GoalDecomposerModal } from './GoalDecomposerModal';
 import { BoardOptions } from './BoardOptions';
+import { Icon } from '../components/Icon';
 import type { TraceBreakdownMessage } from '../types';
 import './Autonomy.css';
 import type { DependencyBadge } from './kanban-helpers';
@@ -1098,7 +1099,8 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
         </div>
         <div className="agentic-kanban-toolbar">
           <Popover
-            label={pendingGoal ? `Goal · review ${pendingGoal.proposedStories.length}` : 'New goal'}
+            label={<><Icon name={pendingGoal ? 'sparkle' : 'plus'} size={14} />{pendingGoal ? `Goal · review ${pendingGoal.proposedStories.length}` : 'New goal'}</>}
+            ariaLabel={pendingGoal ? `Goal · review ${pendingGoal.proposedStories.length}` : 'New goal'}
             title="Describe a goal; it becomes stories (the lead plans it when you have one)"
             triggerClassName="board-btn board-btn--primary"
           >
@@ -1121,9 +1123,10 @@ export function AgenticKanbanApp({ initialArtifacts }: AgenticKanbanAppProps) {
             onClick={() => setAgentEditorOpen(true)}
             title="Name agents and choose each one's CLI and model"
           >
+            <Icon name="agent" size={14} />
             Agents
           </button>
-          <Popover label="⋯" ariaLabel="More board actions" title="More" triggerClassName="board-btn board-btn--icon">
+          <Popover label={<Icon name="more-horizontal" size={16} />} ariaLabel="More board actions" title="More" triggerClassName="board-btn board-btn--icon">
             {(close) => (
               <div className="popover-menu" role="menu">
                 <label className="popover-menu-item" title="Sort cards within each column">

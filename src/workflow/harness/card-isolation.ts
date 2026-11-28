@@ -22,6 +22,18 @@ function cfg(): vscode.WorkspaceConfiguration {
   return vscode.workspace.getConfiguration('agileagentcanvas');
 }
 
+/**
+ * The branch cards start from and land on (agents.baseBranch), when it is set
+ * and exists locally; otherwise undefined, meaning the checked-out branch.
+ */
+export async function baseBranchFor(root: string): Promise<string | undefined> {
+  const name = (cfg().get<string>('agents.baseBranch', '') ?? '').trim();
+  if (!name) return undefined;
+  const exists = (await git(['rev-parse', '--verify', '--quiet', `refs/heads/${name}`], root)).code === 0;
+  if (!exists) logger.warn(`[isolation] agents.baseBranch "${name}" does not exist; using the checked-out branch`);
+  return exists ? name : undefined;
+}
+
 export function workspaceRoot(): string | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
@@ -34,7 +46,8 @@ export async function prepareCardWorkspace(artifactId: string): Promise<CardWork
     if (!root || cfg().get<string>('agents.isolation', 'worktree') !== 'worktree') return undefined;
     if (!(await isGitRepo(git, root))) return undefined;
     const outputFolderName = cfg().get<string>('outputFolder', '.agileagentcanvas-context') ?? '.agileagentcanvas-context';
-    const wt = await prepareWorktree(git, root, artifactId, path.isAbsolute(outputFolderName) ? '.agileagentcanvas-context' : outputFolderName);
+    const base = await baseBranchFor(root);
+    const wt = await prepareWorktree(git, root, artifactId, path.isAbsolute(outputFolderName) ? '.agileagentcanvas-context' : outputFolderName, base);
     logger.info(`[isolation] ${artifactId} runs in ${wt.path} on ${wt.branch}`);
     return wt;
   } catch (err) {
@@ -70,6 +83,7 @@ export async function finishApprovedCard(wt: CardWorktree, title: string): Promi
   const root = workspaceRoot();
   if (!root) return { ok: false, message: 'No workspace folder' };
   const message = `agent: ${title} (${wt.artifactId})`;
+  const base = await baseBranchFor(root);
   if (cfg().get<boolean>('agents.openPullRequests', false)) {
     await git(['add', '-A'], wt.path);
     await git(['commit', '-m', message], wt.path);
@@ -78,7 +92,7 @@ export async function finishApprovedCard(wt: CardWorktree, title: string): Promi
     }
     const push = await git(['push', '-u', 'origin', wt.branch], root);
     if (push.code !== 0) return { ok: false, message: `Could not push ${wt.branch}: ${(push.stderr || push.stdout).trim().slice(0, 300)}` };
-    const pr = await execTool('gh', ['pr', 'create', '--head', wt.branch, '--title', title, '--body', `Implemented and reviewed by Agile Agent Canvas agents for ${wt.artifactId}.`], root);
+    const pr = await execTool('gh', ['pr', 'create', '--head', wt.branch, ...(base ? ['--base', base] : []), '--title', title, '--body', `Implemented and reviewed by Agile Agent Canvas agents for ${wt.artifactId}.`], root);
     let prUrl = pr.stdout.trim().split('\n').pop() ?? '';
     if (pr.code !== 0) {
       // A re-run after review feedback updates the existing PR (the push did that).
@@ -90,10 +104,16 @@ export async function finishApprovedCard(wt: CardWorktree, title: string): Promi
     await removeWorktree(git, root, wt, false);
     return { ok: true, message: `Opened ${prUrl}`, prUrl };
   }
-  const outcome = await mergeWorktree(git, root, wt, message);
+  const outcome = await mergeWorktree(git, root, wt, message, base);
+  const target = base ?? 'your current branch';
   if (outcome.kind === 'conflict') {
-    return { ok: false, message: `Merging ${wt.branch} conflicts with your current branch. The agent's work is kept on that branch and in ${wt.path}; merge it by hand.` };
+    return { ok: false, message: `Merging ${wt.branch} conflicts with ${target}. The agent's work is kept on that branch and in ${wt.path}; merge it by hand.` };
   }
-  await removeWorktree(git, root, wt, true);
+  if (outcome.kind === 'unavailable') {
+    return { ok: false, message: `Could not open ${target} to merge ${wt.branch} into it (${outcome.detail}). If ${target} is checked out in another folder, merge there; the agent's work is kept on ${wt.branch}.` };
+  }
+  await removeWorktree(git, root, wt, !base);
+  // `branch -d` only sees merges into HEAD; this one is merged into `base` (checked above).
+  if (base) await git(['branch', '-D', wt.branch], root);
   return { ok: true, message: outcome.kind === 'merged' ? `Merged ${wt.branch} (${outcome.sha.slice(0, 8)})` : 'No changes to merge' };
 }

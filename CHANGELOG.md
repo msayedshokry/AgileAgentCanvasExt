@@ -131,6 +131,11 @@ Ported the useful parts of upstream Test Architect 1.27.2, Creative Intelligence
 - The Add menu opened below the bottom of the window, so the button seemed to do nothing. It now opens under the button, above the canvas.
 - The header options (model, Workflows, ⋯) and the canvas actions (Add, Ask, Notes) are quiet chips: an icon and a label, with a soft fill on hover.
 - The agent board has a row of option chips, the way Copilot shows its session options: where cards run (own branch or this checkout), the branch they start from, what approving does (merge or pull request), permissions, the agent, and Autopilot. Each chip opens a short list of choices and saves it to the workspace settings.
+- Pick the branch cards start from and land on (`agents.baseBranch`). Merging into a branch you don't have checked out happens in a temporary worktree, so your checkout is never switched; with pull requests it is the base branch.
+- A choice that cannot work here says why: Pull request without the GitHub CLI, or Own branch in a folder that is not a git repository (agents then work in your files). A choice already set that cannot work gets a warning mark.
+- **Use as my default for new projects** saves where cards run, what approving does and the agent as your user defaults. Permissions stay per project.
+- A visual plan whose agent never wrote it no longer spins as "generating" forever: after 30 minutes with nothing written it counts as failed, and an empty failed plan leaves the canvas. The file stays in `plans/`.
+- The board toolbar (New goal, Agents, ⋯) uses the same chips; New goal keeps a blue + icon as the main action.
 - The Plan | Agents switch is larger, and the selected section is tinted in its colour, so it is hard to miss.
 - The agent board has more room: wider columns, more space between and inside cards, larger titles and a roomier sidebar.
 

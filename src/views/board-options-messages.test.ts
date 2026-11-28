@@ -24,6 +24,7 @@ import { getPermissionPosture } from '../workflow/harness/board-harness';
 import { prepareCardWorkspace } from '../workflow/harness/card-isolation';
 
 const settings = new Map<string, unknown>();
+const globalSettings = new Map<string, unknown>();
 const posted: Array<Record<string, unknown>> = [];
 const webview = { postMessage: async (m: Record<string, unknown>) => { posted.push(m); return true; } } as unknown as vscode.Webview;
 let repo = '';
@@ -34,10 +35,15 @@ const lastStatus = () => posted.filter((m) => m.type === 'harness:status').at(-1
 
 beforeEach(() => {
   settings.clear();
+  globalSettings.clear();
   posted.length = 0;
   const config = {
     get: (key: string, fallback?: unknown) => (settings.has(key) ? settings.get(key) : fallback),
-    update: async (key: string, value: unknown) => { settings.set(key, value); },
+    update: async (key: string, value: unknown, target?: number) => {
+      const into = target === vscode.ConfigurationTarget.Global ? globalSettings : settings;
+      if (value === undefined) into.delete(key); else into.set(key, value);
+    },
+    inspect: (key: string) => ({ workspaceValue: settings.get(key), globalValue: globalSettings.get(key) }),
     has: () => true,
   };
   vi.mocked(vscode.workspace.getConfiguration).mockImplementation(() => config as never);
@@ -45,6 +51,7 @@ beforeEach(() => {
   const git = (...args: string[]) => cp.execFileSync('git', args, { cwd: repo, stdio: 'ignore' });
   git('init', '-b', 'feature-x');
   git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '--allow-empty', '-m', 'init');
+  git('branch', 'develop');
   (vscode.workspace as { workspaceFolders: unknown }).workspaceFolders = [{ uri: { fsPath: repo } }];
 });
 
@@ -56,7 +63,45 @@ afterEach(() => {
 describe('board option messages', () => {
   it('reports the defaults and the checked-out branch', async () => {
     await send({ type: 'harness:getStatus' });
-    expect(lastStatus()).toMatchObject({ isolation: 'worktree', delivery: 'merge', posture: 'sandboxed', branch: 'feature-x' });
+    expect(lastStatus()).toMatchObject({ isolation: 'worktree', delivery: 'merge', posture: 'sandboxed', branch: 'feature-x', isGit: true });
+    expect(lastStatus()?.branches).toEqual(expect.arrayContaining(['feature-x', 'develop']));
+    expect(typeof lastStatus()?.hasGh).toBe('boolean');
+  });
+
+  it('knows a folder that is not a git repository', async () => {
+    const plain = fs.mkdtempSync(path.join(os.tmpdir(), 'board-plain-'));
+    (vscode.workspace as { workspaceFolders: unknown }).workspaceFolders = [{ uri: { fsPath: plain } }];
+    // Stop git looking above the folder (a temp folder can sit inside a repository).
+    const ceiling = process.env.GIT_CEILING_DIRECTORIES;
+    process.env.GIT_CEILING_DIRECTORIES = path.dirname(plain);
+    try {
+      await send({ type: 'harness:getStatus' });
+      expect(lastStatus()).toMatchObject({ isGit: false, branches: [] });
+      expect(lastStatus()?.branch).toBeUndefined();
+    } finally {
+      if (ceiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = ceiling;
+      fs.rmSync(plain, { recursive: true, force: true });
+    }
+  });
+
+  it('starts cards from the chosen branch, and only accepts branches that exist', async () => {
+    await send({ type: 'harness:setBaseBranch', branch: 'develop' });
+    expect(settings.get('agents.baseBranch')).toBe('develop');
+    expect(lastStatus()).toMatchObject({ baseBranch: 'develop' });
+    await send({ type: 'harness:setBaseBranch', branch: 'no-such; rm -rf' });
+    expect(settings.get('agents.baseBranch')).toBe('develop');
+    await send({ type: 'harness:setBaseBranch', branch: '' });
+    expect(settings.has('agents.baseBranch')).toBe(false);
+  });
+
+  it('saves where cards run, delivery and agent as your defaults, but not permissions', async () => {
+    await send({ type: 'harness:setIsolation', isolation: 'none' });
+    await send({ type: 'harness:setDelivery', delivery: 'pr' });
+    await send({ type: 'harness:setPosture', posture: 'full' });
+    await send({ type: 'harness:saveDefaults' });
+    expect(globalSettings.get('agents.isolation')).toBe('none');
+    expect(globalSettings.get('agents.openPullRequests')).toBe(true);
+    expect(globalSettings.has('agents.permissionPosture')).toBe(false);
   });
 
   it('"This checkout" makes cards run in the workspace instead of a worktree', async () => {

@@ -1542,6 +1542,11 @@
             ],
             "markdownDescription": "Where autonomous agents work. `worktree` (default, git repositories only) gives every card its own branch and working copy, so parallel cards never share files and your checkout is never switched."
           },
+          "agileagentcanvas.agents.baseBranch": {
+            "type": "string",
+            "default": "",
+            "markdownDescription": "The branch cards start from and land on when `agents.isolation` is `worktree`. Empty uses the branch you have checked out. Merging into another branch happens in a temporary worktree, so your checkout is never switched; with `agents.openPullRequests` it is the pull request's base."
+          },
           "agileagentcanvas.agents.verifyAfterImplement": {
             "type": "boolean",
             "default": true,
